@@ -7,6 +7,7 @@ from app.api.error_handlers import app_error_handler
 from app.api.middleware import RequestLoggingMiddleware
 from app.api.routes.analytics import router as analytics_router
 from app.api.routes.auth import router as auth_router
+from app.api.routes.budgets import router as budgets_router
 from app.api.routes.categories import router as categories_router
 from app.api.routes.companies import router as companies_router
 from app.api.routes.health import router as health_router
@@ -50,6 +51,7 @@ app.include_router(auth_router, prefix="/api/v1")
 authenticated = [Depends(get_current_user)]
 editor = [Depends(require_roles(UserRole.ADMIN, UserRole.ANALYST))]
 app.include_router(analytics_router, prefix="/api/v1", dependencies=authenticated)
+app.include_router(budgets_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(companies_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(categories_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(transactions_router, prefix="/api/v1", dependencies=authenticated)

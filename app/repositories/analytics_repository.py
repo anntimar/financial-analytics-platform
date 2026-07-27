@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import Date, case, func, literal, select
 from sqlalchemy.orm import Session
 
+from app.models.budget import Budget
 from app.models.category import Category
 from app.models.transaction import Transaction
 from app.schemas.category import TransactionType
@@ -218,6 +219,58 @@ class AnalyticsRepository:
             func.coalesce(func.sum(Transaction.amount), 0).label("total_receivables"),
         ).where(*filters)
         return dict(self.session.execute(statement).mappings().one())
+
+    def budget_comparison(
+        self, company_id: uuid.UUID, start_date: date, end_date: date
+    ) -> list[dict[str, Any]]:
+        reference_month = func.date_trunc("month", Transaction.competence_date).cast(Date)
+        realized = (
+            select(
+                Transaction.company_id.label("company_id"),
+                Transaction.category_id.label("category_id"),
+                Transaction.transaction_type.label("transaction_type"),
+                reference_month.label("reference_month"),
+                func.sum(Transaction.amount).label("realized_amount"),
+            )
+            .where(
+                Transaction.company_id == company_id,
+                Transaction.competence_date >= start_date,
+                Transaction.competence_date <= end_date,
+                Transaction.status == "paid",
+            )
+            .group_by(
+                Transaction.company_id,
+                Transaction.category_id,
+                Transaction.transaction_type,
+                reference_month,
+            )
+            .subquery()
+        )
+        statement = (
+            select(
+                Budget.reference_month,
+                Budget.category_id,
+                Category.name.label("category_name"),
+                Budget.transaction_type,
+                Budget.amount.label("planned_amount"),
+                func.coalesce(realized.c.realized_amount, 0).label("realized_amount"),
+            )
+            .join(Category, Category.id == Budget.category_id)
+            .outerjoin(
+                realized,
+                (realized.c.company_id == Budget.company_id)
+                & (realized.c.category_id == Budget.category_id)
+                & (realized.c.transaction_type == Budget.transaction_type)
+                & (realized.c.reference_month == Budget.reference_month),
+            )
+            .where(
+                Budget.company_id == company_id,
+                Budget.reference_month >= start_date,
+                Budget.reference_month <= end_date,
+            )
+            .order_by(Budget.reference_month, Budget.transaction_type, Category.name)
+        )
+        return [dict(row) for row in self.session.execute(statement).mappings()]
 
     def expense_transactions(
         self, company_id: uuid.UUID, start_date: date, end_date: date

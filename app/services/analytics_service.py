@@ -12,6 +12,7 @@ from app.schemas.analytics import (
     MonthlyFinancialSummary,
     OverdueSummary,
 )
+from app.schemas.budget import BudgetComparison
 from app.schemas.category import TransactionType
 
 HUNDRED = Decimal("100")
@@ -143,3 +144,26 @@ class AnalyticsService:
             else None,
             delinquency_rate_percentage=percentage(overdue, total),
         )
+
+    def budget_comparison(
+        self, company_id: uuid.UUID, start_date: date, end_date: date
+    ) -> list[BudgetComparison]:
+        self._validate(company_id, start_date, end_date)
+        result = []
+        for row in self.repository.budget_comparison(company_id, start_date, end_date):
+            planned = Decimal(row["planned_amount"])
+            realized = Decimal(row["realized_amount"])
+            variance = realized - planned
+            result.append(
+                BudgetComparison(
+                    reference_month=row["reference_month"],
+                    category_id=row["category_id"],
+                    category_name=row["category_name"],
+                    transaction_type=row["transaction_type"],
+                    planned_amount=planned,
+                    realized_amount=realized,
+                    variance_amount=variance,
+                    variance_percentage=percentage(variance, planned),
+                )
+            )
+        return result

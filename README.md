@@ -115,6 +115,14 @@ Todos os endpoints analíticos exigem `company_id`, `start_date` e `end_date`:
 - `GET /api/v1/analytics/categories`;
 - `GET /api/v1/analytics/cash-flow`;
 - `GET /api/v1/analytics/overdue`.
+- `GET /api/v1/analytics/budget-comparison`.
+
+### Planejamento orçamentário
+
+Orçamentos mensais são gerenciados em `/api/v1/budgets`. Cada combinação de
+empresa, categoria, tipo e mês é única. O comparativo calcula o desvio como
+`realizado - planejado`, considera apenas transações pagas e pode ser exportado
+em CSV pela página **Planejado vs. realizado** do dashboard.
 
 Endpoints preditivos:
 
