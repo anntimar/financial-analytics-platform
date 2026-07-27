@@ -161,6 +161,24 @@ def test_budget_comparison_calculates_variances() -> None:
     assert result[1].variance_percentage is None
 
 
+def test_account_balances_calculates_current_balance() -> None:
+    service, repository, company_id = service_with_repository()
+    repository.account_balances.return_value = [
+        {
+            "account_id": uuid.uuid4(),
+            "account_name": "Conta principal",
+            "account_type": "checking",
+            "opening_balance": Decimal("1000"),
+            "inflows": Decimal("500"),
+            "outflows": Decimal("200"),
+        }
+    ]
+
+    result = service.account_balances(company_id, START_DATE, END_DATE)
+
+    assert result[0].current_balance == Decimal("1300")
+
+
 def test_analytics_validates_period_and_company() -> None:
     service, _, company_id = service_with_repository()
     with pytest.raises(AppError, match="start_date"):
@@ -193,6 +211,7 @@ def test_analytics_repository_builds_all_queries() -> None:
     assert repository.cash_flow(company_id, START_DATE, END_DATE) == []
     assert repository.overdue_summary(company_id, START_DATE, END_DATE)["total_receivables"] == 0
     assert repository.budget_comparison(company_id, START_DATE, END_DATE) == []
+    assert repository.account_balances(company_id, START_DATE, END_DATE) == []
 
 
 def test_executive_summary_endpoint() -> None:

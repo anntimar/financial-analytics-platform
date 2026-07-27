@@ -42,22 +42,24 @@ def list_transactions(
     end_date: date | None = None,
     transaction_type: TransactionType | None = None,
     category_id: uuid.UUID | None = None,
+    account_id: uuid.UUID | None = None,
     status_filter: Annotated[TransactionStatus | None, Query(alias="status")] = None,
     minimum_amount: Annotated[Decimal | None, Query(ge=0)] = None,
     maximum_amount: Annotated[Decimal | None, Query(ge=0)] = None,
 ) -> Page[TransactionResponse]:
     ensure_company_access(user, company_id)
     return service.list(
-        company_id,
-        page,
-        page_size,
-        start_date,
-        end_date,
-        transaction_type,
-        category_id,
-        status_filter,
-        minimum_amount,
-        maximum_amount,
+        company_id=company_id,
+        page=page,
+        page_size=page_size,
+        start_date=start_date,
+        end_date=end_date,
+        transaction_type=transaction_type,
+        category_id=category_id,
+        status=status_filter,
+        minimum_amount=minimum_amount,
+        maximum_amount=maximum_amount,
+        account_id=account_id,
     )
 
 

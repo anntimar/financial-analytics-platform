@@ -33,6 +33,7 @@ class TransactionRepository:
         end_date: date | None = None,
         transaction_type: TransactionType | None = None,
         category_id: uuid.UUID | None = None,
+        account_id: uuid.UUID | None = None,
         status: TransactionStatus | None = None,
         minimum_amount: Decimal | None = None,
         maximum_amount: Decimal | None = None,
@@ -46,6 +47,8 @@ class TransactionRepository:
             filters.append(Transaction.transaction_type == transaction_type)
         if category_id:
             filters.append(Transaction.category_id == category_id)
+        if account_id:
+            filters.append(Transaction.account_id == account_id)
         if status:
             filters.append(Transaction.status == status)
         if minimum_amount is not None:

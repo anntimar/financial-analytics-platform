@@ -124,6 +124,14 @@ empresa, categoria, tipo e mês é única. O comparativo calcula o desvio como
 `realizado - planejado`, considera apenas transações pagas e pode ser exportado
 em CSV pela página **Planejado vs. realizado** do dashboard.
 
+### Contas financeiras
+
+Contas correntes, caixa, carteiras digitais, cartões corporativos e investimentos
+podem ser gerenciados em `/api/v1/accounts`. Transações novas aceitam `account_id`
+opcional, preservando a compatibilidade com arquivos e dados antigos. O endpoint
+`GET /api/v1/analytics/account-balances` consolida saldo inicial, entradas, saídas
+e saldo atual por conta; a página **Contas e saldos** apresenta essa visão.
+
 Endpoints preditivos:
 
 - `GET /api/v1/predictive/revenue-forecast`: tendência de receita para 1 a 6 meses;
