@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-and-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: finanalytics_test
+          POSTGRES_USER: finanalytics_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U finanalytics_user -d finanalytics_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      APP_ENV: test
+      APP_DEBUG: "false"
+      LOG_LEVEL: WARNING
+      DATABASE_URL: postgresql+psycopg://finanalytics_user:test_password@localhost:5432/finanalytics_test
+      RUN_INTEGRATION_TESTS: "true"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --extra dev
+
+      - name: Lint
+        run: uv run --frozen ruff check .
+
+      - name: Check formatting
+        run: uv run --frozen ruff format --check .
+
+      - name: Type check
+        run: uv run --frozen mypy app dashboard scripts
+
+      - name: Apply migrations
+        run: uv run --frozen alembic upgrade head
+
+      - name: Run tests
+        run: uv run --frozen pytest
+

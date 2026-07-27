@@ -1,0 +1,242 @@
+import uuid
+from datetime import date
+from typing import Any
+
+from sqlalchemy import Date, case, func, literal, select
+from sqlalchemy.orm import Session
+
+from app.models.category import Category
+from app.models.transaction import Transaction
+from app.schemas.category import TransactionType
+
+
+class AnalyticsRepository:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    @staticmethod
+    def _base_filters(company_id: uuid.UUID, start_date: date, end_date: date) -> list[Any]:
+        return [
+            Transaction.company_id == company_id,
+            Transaction.competence_date >= start_date,
+            Transaction.competence_date <= end_date,
+            Transaction.status != "cancelled",
+        ]
+
+    def executive_summary(
+        self, company_id: uuid.UUID, start_date: date, end_date: date
+    ) -> dict[str, Any]:
+        filters = self._base_filters(company_id, start_date, end_date)
+        statement = select(
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            (Transaction.transaction_type == "revenue")
+                            & (Transaction.status == "paid"),
+                            Transaction.amount,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("realized_revenue"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            (Transaction.transaction_type == "expense")
+                            & (Transaction.status == "paid"),
+                            Transaction.amount,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("realized_expense"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            (Transaction.transaction_type == "revenue")
+                            & (Transaction.status.in_(("pending", "partially_paid"))),
+                            Transaction.amount,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("pending_receivables"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            (Transaction.transaction_type == "revenue")
+                            & (Transaction.status == "overdue"),
+                            Transaction.amount,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("overdue_receivables"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (Transaction.transaction_type == "revenue", Transaction.amount),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("total_receivables"),
+        ).where(*filters)
+        row = self.session.execute(statement).mappings().one()
+        return dict(row)
+
+    def monthly_summary(
+        self, company_id: uuid.UUID, start_date: date, end_date: date
+    ) -> list[dict[str, Any]]:
+        reference_month = (
+            func.date_trunc("month", Transaction.competence_date)
+            .cast(Date)
+            .label("reference_month")
+        )
+        revenue = func.sum(
+            case(
+                (
+                    (Transaction.transaction_type == "revenue") & (Transaction.status == "paid"),
+                    Transaction.amount,
+                ),
+                else_=0,
+            )
+        ).label("total_revenue")
+        expense = func.sum(
+            case(
+                (
+                    (Transaction.transaction_type == "expense") & (Transaction.status == "paid"),
+                    Transaction.amount,
+                ),
+                else_=0,
+            )
+        ).label("total_expense")
+        statement = (
+            select(reference_month, revenue, expense)
+            .where(*self._base_filters(company_id, start_date, end_date))
+            .group_by(reference_month)
+            .order_by(reference_month)
+        )
+        return [dict(row) for row in self.session.execute(statement).mappings()]
+
+    def category_summary(
+        self,
+        company_id: uuid.UUID,
+        start_date: date,
+        end_date: date,
+        transaction_type: TransactionType,
+    ) -> list[dict[str, Any]]:
+        statement = (
+            select(
+                Category.id.label("category_id"),
+                Category.name.label("category_name"),
+                Category.transaction_type,
+                func.sum(Transaction.amount).label("total_amount"),
+                func.count(Transaction.id).label("transaction_count"),
+            )
+            .join(Category, Category.id == Transaction.category_id)
+            .where(
+                *self._base_filters(company_id, start_date, end_date),
+                Transaction.transaction_type == transaction_type,
+                Transaction.status == "paid",
+            )
+            .group_by(Category.id, Category.name, Category.transaction_type)
+            .order_by(func.sum(Transaction.amount).desc())
+        )
+        return [dict(row) for row in self.session.execute(statement).mappings()]
+
+    def cash_flow(
+        self, company_id: uuid.UUID, start_date: date, end_date: date
+    ) -> list[dict[str, Any]]:
+        cash_date = func.coalesce(
+            Transaction.payment_date,
+            Transaction.due_date,
+            Transaction.competence_date,
+        )
+        reference_month = func.date_trunc("month", cash_date).cast(Date)
+        inflows = func.sum(
+            case(
+                (Transaction.transaction_type == "revenue", Transaction.amount),
+                else_=0,
+            )
+        ).label("inflows")
+        outflows = func.sum(
+            case(
+                (Transaction.transaction_type == "expense", Transaction.amount),
+                else_=0,
+            )
+        ).label("outflows")
+        statement = (
+            select(reference_month.label("reference_month"), inflows, outflows)
+            .where(
+                Transaction.company_id == company_id,
+                cash_date >= start_date,
+                cash_date <= end_date,
+                Transaction.status != "cancelled",
+            )
+            .group_by(reference_month)
+            .order_by(reference_month)
+        )
+        return [dict(row) for row in self.session.execute(statement).mappings()]
+
+    def overdue_summary(
+        self, company_id: uuid.UUID, start_date: date, end_date: date
+    ) -> dict[str, Any]:
+        filters = [
+            *self._base_filters(company_id, start_date, end_date),
+            Transaction.transaction_type == "revenue",
+        ]
+        statement = select(
+            func.coalesce(
+                func.sum(
+                    case(
+                        (Transaction.status == "overdue", Transaction.amount),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("overdue_amount"),
+            func.count(case((Transaction.status == "overdue", Transaction.id))).label(
+                "overdue_count"
+            ),
+            func.avg(
+                case(
+                    (
+                        Transaction.status == "overdue",
+                        literal(end_date) - Transaction.due_date,
+                    )
+                )
+            ).label("average_days_overdue"),
+            func.coalesce(func.sum(Transaction.amount), 0).label("total_receivables"),
+        ).where(*filters)
+        return dict(self.session.execute(statement).mappings().one())
+
+    def expense_transactions(
+        self, company_id: uuid.UUID, start_date: date, end_date: date
+    ) -> list[dict[str, Any]]:
+        statement = (
+            select(
+                Transaction.id,
+                Transaction.competence_date,
+                Transaction.description,
+                Transaction.amount,
+                Category.id.label("category_id"),
+                Category.name.label("category_name"),
+            )
+            .join(Category, Category.id == Transaction.category_id)
+            .where(
+                *self._base_filters(company_id, start_date, end_date),
+                Transaction.transaction_type == "expense",
+                Transaction.status == "paid",
+            )
+            .order_by(Transaction.competence_date.desc(), Transaction.amount.desc())
+        )
+        return [dict(row) for row in self.session.execute(statement).mappings()]

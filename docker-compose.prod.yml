@@ -1,0 +1,24 @@
+services:
+  postgres:
+    restart: unless-stopped
+    ports: []
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+
+  api:
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_LEVEL: INFO
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?ALLOWED_HOSTS is required}
+
+  dashboard:
+    restart: unless-stopped
+    environment:
+      DASHBOARD_API_URL: http://api:8000/api/v1

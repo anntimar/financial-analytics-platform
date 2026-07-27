@@ -1,0 +1,1 @@
+"""FinAnalytics application package."""

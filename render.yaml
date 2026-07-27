@@ -1,0 +1,62 @@
+databases:
+  - name: finanalytics-db
+    plan: free
+    region: oregon
+    databaseName: finanalytics
+    user: finanalytics
+    ipAllowList: []
+
+services:
+  - type: web
+    name: finanalytics-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile.api
+    dockerContext: .
+    dockerCommand: >-
+      sh -c "alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /api/v1/health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: ALLOWED_HOSTS
+        value: "*.onrender.com"
+      - key: INTERNAL_HOST
+        fromService:
+          type: web
+          name: finanalytics-api
+          property: host
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: finanalytics-db
+          property: connectionString
+
+  - type: web
+    name: finanalytics-dashboard
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile.dashboard
+    dockerContext: .
+    dockerCommand: >-
+      sh -c "streamlit run dashboard/Home.py
+      --server.address=0.0.0.0 --server.port=$PORT"
+    healthCheckPath: /_stcore/health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: DASHBOARD_API_URL
+        fromService:
+          type: web
+          name: finanalytics-api
+          property: hostport
