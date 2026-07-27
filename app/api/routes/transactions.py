@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.api.dependencies import get_transaction_service
-from app.core.security import require_roles
+from app.core.security import CurrentUser, ensure_company_access, require_roles
 from app.schemas.auth import UserRole
 from app.schemas.category import TransactionType
 from app.schemas.common import Page
@@ -25,8 +25,9 @@ Editor = Annotated[object, Depends(require_roles(UserRole.ADMIN, UserRole.ANALYS
 
 @router.post("", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
 def create_transaction(
-    data: TransactionCreate, service: Service, _editor: Editor
+    data: TransactionCreate, service: Service, _editor: Editor, user: CurrentUser
 ) -> TransactionResponse:
+    ensure_company_access(user, data.company_id)
     return TransactionResponse.model_validate(service.create(data))
 
 
@@ -34,6 +35,7 @@ def create_transaction(
 def list_transactions(
     company_id: uuid.UUID,
     service: Service,
+    user: CurrentUser,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     start_date: date | None = None,
@@ -44,6 +46,7 @@ def list_transactions(
     minimum_amount: Annotated[Decimal | None, Query(ge=0)] = None,
     maximum_amount: Annotated[Decimal | None, Query(ge=0)] = None,
 ) -> Page[TransactionResponse]:
+    ensure_company_access(user, company_id)
     return service.list(
         company_id,
         page,
@@ -59,18 +62,30 @@ def list_transactions(
 
 
 @router.get("/{transaction_id}", response_model=TransactionResponse)
-def get_transaction(transaction_id: uuid.UUID, service: Service) -> TransactionResponse:
-    return TransactionResponse.model_validate(service.get(transaction_id))
+def get_transaction(
+    transaction_id: uuid.UUID, service: Service, user: CurrentUser
+) -> TransactionResponse:
+    transaction = service.get(transaction_id)
+    ensure_company_access(user, transaction.company_id)
+    return TransactionResponse.model_validate(transaction)
 
 
 @router.patch("/{transaction_id}", response_model=TransactionResponse)
 def update_transaction(
-    transaction_id: uuid.UUID, data: TransactionUpdate, service: Service, _editor: Editor
+    transaction_id: uuid.UUID,
+    data: TransactionUpdate,
+    service: Service,
+    _editor: Editor,
+    user: CurrentUser,
 ) -> TransactionResponse:
+    ensure_company_access(user, service.get(transaction_id).company_id)
     return TransactionResponse.model_validate(service.update(transaction_id, data))
 
 
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_transaction(transaction_id: uuid.UUID, service: Service, _editor: Editor) -> Response:
+def delete_transaction(
+    transaction_id: uuid.UUID, service: Service, _editor: Editor, user: CurrentUser
+) -> Response:
+    ensure_company_access(user, service.get(transaction_id).company_id)
     service.delete(transaction_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
