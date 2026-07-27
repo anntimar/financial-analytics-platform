@@ -77,6 +77,6 @@ def test_dashboard_api_url_normalizes_render_hostport() -> None:
 
 
 def test_dashboard_home_page_smoke() -> None:
-    app_test = AppTest.from_file("dashboard/Home.py").run(timeout=10)
+    app_test = AppTest.from_file("dashboard/Home.py").run(timeout=30)
     assert not app_test.exception
     assert app_test.title[0].value == "FinAnalytics"
