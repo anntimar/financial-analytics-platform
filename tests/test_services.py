@@ -310,3 +310,73 @@ def test_transaction_service_validates_account() -> None:
         service._validate_account(account_id, company_id)
     accounts.get.return_value = SimpleNamespace(company_id=company_id, is_active=True)
     service._validate_account(account_id, company_id)
+
+
+def test_transaction_service_validates_subcategory_and_filter() -> None:
+    company_id = uuid.uuid4()
+    category_id = uuid.uuid4()
+    subcategory_id = uuid.uuid4()
+    repository = Mock()
+    repository.list.return_value = ([], 0)
+    companies = Mock()
+    companies.get.return_value = SimpleNamespace(id=company_id)
+    categories = Mock()
+    categories.get.return_value = SimpleNamespace(
+        id=category_id,
+        company_id=company_id,
+        transaction_type=TransactionType.EXPENSE,
+    )
+    subcategories = Mock()
+    service = TransactionService(repository, companies, categories, None, subcategories)
+    payload = TransactionCreate(
+        company_id=company_id,
+        category_id=category_id,
+        subcategory_id=subcategory_id,
+        transaction_type=TransactionType.EXPENSE,
+        description="Tráfego pago",
+        amount=Decimal("100"),
+        competence_date=date(2026, 1, 1),
+        payment_date=date(2026, 1, 1),
+        status=TransactionStatus.PAID,
+    )
+
+    subcategories.get.return_value = None
+    with pytest.raises(NotFoundError, match="Subcategoria"):
+        service.create(payload)
+    subcategories.get.return_value = SimpleNamespace(category_id=uuid.uuid4(), is_active=True)
+    with pytest.raises(AppError, match="não pertence"):
+        service.create(payload)
+    subcategories.get.return_value = SimpleNamespace(category_id=category_id, is_active=False)
+    with pytest.raises(AppError, match="inativa"):
+        service.create(payload)
+
+    subcategories.get.return_value = SimpleNamespace(category_id=category_id, is_active=True)
+    repository.create.return_value = SimpleNamespace(id=uuid.uuid4())
+    assert service.create(payload) is repository.create.return_value
+    service.list(
+        company_id,
+        1,
+        20,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        subcategory_id=subcategory_id,
+    )
+    assert repository.list.call_args.kwargs["subcategory_id"] == subcategory_id
+
+    transaction = SimpleNamespace(
+        id=uuid.uuid4(),
+        company_id=company_id,
+        category_id=category_id,
+        subcategory_id=subcategory_id,
+        transaction_type="expense",
+        payment_date=date(2026, 1, 1),
+    )
+    repository.get.return_value = transaction
+    repository.update.return_value = transaction
+    service.update(transaction.id, TransactionUpdate(subcategory_id=subcategory_id))
+    service.update(transaction.id, TransactionUpdate(category_id=category_id))

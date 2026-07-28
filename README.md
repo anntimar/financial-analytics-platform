@@ -294,7 +294,12 @@ por empresa, e a visão executiva oferece download direto nos dois formatos.
 
 - `core.companies`: empresas fictícias isoladas por identificador;
 - `core.categories`: categorias de receita ou despesa por empresa;
+- `core.subcategories`: detalhamento opcional das categorias financeiras;
 - `core.transactions`: lançamentos financeiros com competência, vencimento e status.
+
+Subcategorias são gerenciadas por `/api/v1/subcategories` e podem ser associadas
+opcionalmente às transações. O vínculo é validado contra a categoria principal, e
+`GET /api/v1/transactions` aceita `subcategory_id` como filtro.
 
 Valores monetários são armazenados como `NUMERIC(14,2)`. Datas de negócio usam `DATE`;
 datas de auditoria usam `TIMESTAMPTZ`.

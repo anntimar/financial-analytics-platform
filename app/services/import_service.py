@@ -11,6 +11,7 @@ from app.pipelines.validation import ValidationIssueData, prepare_transaction
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.company_repository import CompanyRepository
 from app.repositories.import_repository import ImportRepository
+from app.repositories.subcategory_repository import SubcategoryRepository
 from app.schemas.common import Page
 from app.schemas.import_batch import (
     DataQualityIssueResponse,
@@ -27,10 +28,12 @@ class ImportService:
         repository: ImportRepository,
         company_repository: CompanyRepository,
         category_repository: CategoryRepository,
+        subcategory_repository: SubcategoryRepository | None = None,
     ) -> None:
         self.repository = repository
         self.company_repository = company_repository
         self.category_repository = category_repository
+        self.subcategory_repository = subcategory_repository
 
     def import_transactions(
         self, company_id: uuid.UUID, file_name: str, content: bytes
@@ -99,6 +102,30 @@ class ImportService:
                                 prepared.transaction_type,
                             )
                         )
+                    if prepared.subcategory_id:
+                        subcategory = (
+                            self.subcategory_repository.get(prepared.subcategory_id)
+                            if self.subcategory_repository
+                            else None
+                        )
+                        if subcategory is None:
+                            issues.append(
+                                ValidationIssueData(
+                                    "subcategory_id",
+                                    "subcategory_not_found",
+                                    "Subcategoria não encontrada.",
+                                    str(prepared.subcategory_id),
+                                )
+                            )
+                        elif subcategory.category_id != prepared.category_id:
+                            issues.append(
+                                ValidationIssueData(
+                                    "subcategory_id",
+                                    "subcategory_category_mismatch",
+                                    "Subcategoria não pertence à categoria.",
+                                    str(prepared.subcategory_id),
+                                )
+                            )
 
                 if prepared is not None and (
                     prepared.transaction_hash in hashes_in_file
