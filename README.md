@@ -268,6 +268,14 @@ categoria e sinaliza despesas pagas acima de `Q3 + 1,5 × IQR`. Cada resultado
 informa a mediana, o limite calculado e uma explicação legível. Os modelos usam
 somente dados sintéticos e não devem orientar decisões financeiras reais.
 
+## Alertas financeiros
+
+O endpoint `GET /api/v1/alerts` consolida sinais calculados no momento da consulta,
+sem duplicar dados em tabelas. Ele informa resultado líquido negativo, inadimplência
+a partir de 5% (crítica em 10%), desvios de orçamento a partir de 10% (críticos em
+20%) e contas com saldo negativo. A página **Alertas Financeiros** do dashboard
+ordena os sinais por severidade e mostra o contexto do período selecionado.
+
 ## Modelo inicial
 
 - `core.companies`: empresas fictícias isoladas por identificador;

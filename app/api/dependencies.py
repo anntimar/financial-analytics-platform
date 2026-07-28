@@ -13,6 +13,7 @@ from app.repositories.import_repository import ImportRepository
 from app.repositories.transaction_repository import TransactionRepository
 from app.repositories.user_repository import UserRepository
 from app.services.account_service import AccountService
+from app.services.alert_service import AlertService
 from app.services.analytics_service import AnalyticsService
 from app.services.auth_service import AuthService
 from app.services.budget_service import BudgetService
@@ -27,6 +28,10 @@ DatabaseSession = Annotated[Session, Depends(get_db)]
 
 def get_account_service(session: DatabaseSession) -> AccountService:
     return AccountService(AccountRepository(session), CompanyRepository(session))
+
+
+def get_alert_service(session: DatabaseSession) -> AlertService:
+    return AlertService(get_analytics_service(session))
 
 
 def get_auth_service(session: DatabaseSession) -> AuthService:
