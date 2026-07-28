@@ -4,6 +4,7 @@ import time
 import uuid
 
 from app.core.exceptions import AppError, ConflictError, NotFoundError
+from app.core.metrics import IMPORT_DURATION, IMPORT_ROWS
 from app.models.import_batch import ImportBatch
 from app.pipelines.readers.csv_reader import read_csv_rows
 from app.pipelines.validation import ValidationIssueData, prepare_transaction
@@ -125,6 +126,9 @@ class ImportService:
             completed_batch = self.repository.complete_batch(
                 batch, total=len(rows), valid=valid, rejected=rejected
             )
+            IMPORT_ROWS.labels("valid").inc(valid)
+            IMPORT_ROWS.labels("rejected").inc(rejected)
+            IMPORT_DURATION.observe(time.perf_counter() - started_at)
             logger.info(
                 "transaction_import_completed",
                 extra={

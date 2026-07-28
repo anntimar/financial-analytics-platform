@@ -57,6 +57,9 @@ Depois de iniciado:
 - API: <http://localhost:8000>
 - Swagger: <http://localhost:8000/docs>
 - Saúde: <http://localhost:8000/api/v1/health>
+- Liveness: <http://localhost:8000/api/v1/live>
+- Readiness do PostgreSQL: <http://localhost:8000/api/v1/ready>
+- Métricas Prometheus: <http://localhost:8000/api/v1/metrics>
 - Dashboard: <http://localhost:8501>
 
 ## Autenticação e perfis
@@ -210,6 +213,11 @@ A API escreve logs JSON em `stdout`. Cada requisição recebe um `X-Request-ID` 
 registra método, caminho, status e duração. Importações também registram lote,
 empresa, linhas válidas, rejeições e duração, sem incluir o conteúdo financeiro
 do arquivo.
+
+O endpoint Prometheus expõe contagem e duração de requisições por método, rota e
+status, além de linhas válidas/rejeitadas e duração das importações. As labels usam
+o template da rota, evitando cardinalidade alta causada por UUIDs. `/live` confirma
+que o processo está ativo; `/ready` retorna `503` quando o PostgreSQL não responde.
 
 ## Execução em produção
 

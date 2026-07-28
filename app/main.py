@@ -13,6 +13,7 @@ from app.api.routes.categories import router as categories_router
 from app.api.routes.companies import router as companies_router
 from app.api.routes.health import router as health_router
 from app.api.routes.imports import router as imports_router
+from app.api.routes.monitoring import router as monitoring_router
 from app.api.routes.predictive import router as predictive_router
 from app.api.routes.transactions import router as transactions_router
 from app.api.security_headers import SecurityHeadersMiddleware
@@ -48,6 +49,7 @@ if settings.app_env == "production":
         allowed_hosts=sorted(allowed_hosts),
     )
 app.include_router(health_router, prefix="/api/v1")
+app.include_router(monitoring_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
 authenticated = [Depends(get_current_user)]
 editor = [Depends(require_roles(UserRole.ADMIN, UserRole.ANALYST))]
