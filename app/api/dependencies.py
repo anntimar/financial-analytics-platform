@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.repositories.account_repository import AccountRepository
+from app.repositories.alert_action_repository import AlertActionRepository
 from app.repositories.analytics_repository import AnalyticsRepository
 from app.repositories.budget_repository import BudgetRepository
 from app.repositories.category_repository import CategoryRepository
@@ -31,7 +32,10 @@ def get_account_service(session: DatabaseSession) -> AccountService:
 
 
 def get_alert_service(session: DatabaseSession) -> AlertService:
-    return AlertService(get_analytics_service(session))
+    return AlertService(
+        get_analytics_service(session),
+        AlertActionRepository(session),
+    )
 
 
 def get_auth_service(session: DatabaseSession) -> AuthService:

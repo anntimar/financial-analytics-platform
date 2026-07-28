@@ -132,6 +132,33 @@ class FinAnalyticsClient:
             self._analytics("/alerts", company_id, start_date, end_date),
         )
 
+    def update_alert_action(
+        self,
+        company_id: uuid.UUID | str,
+        alert_code: str,
+        reference_date: date,
+        period_start: date,
+        period_end: date,
+        status: str,
+        note: str | None,
+    ) -> dict[str, Any]:
+        return cast(
+            dict[str, Any],
+            self._request(
+                "PUT",
+                "/alerts/action",
+                json={
+                    "company_id": str(company_id),
+                    "alert_code": alert_code,
+                    "reference_date": reference_date.isoformat(),
+                    "period_start": period_start.isoformat(),
+                    "period_end": period_end.isoformat(),
+                    "status": status,
+                    "note": note or None,
+                },
+            ),
+        )
+
     def revenue_forecast(
         self,
         company_id: uuid.UUID | str,

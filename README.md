@@ -276,6 +276,12 @@ a partir de 5% (crítica em 10%), desvios de orçamento a partir de 10% (crític
 20%) e contas com saldo negativo. A página **Alertas Financeiros** do dashboard
 ordena os sinais por severidade e mostra o contexto do período selecionado.
 
+Cada ocorrência pode ser mantida em aberto, reconhecida ou resolvida pelo endpoint
+`PUT /api/v1/alerts/action` ou diretamente no dashboard. O tratamento registra uma
+nota, o usuário responsável e os horários de criação e atualização em
+`core.alert_actions`, enquanto os valores financeiros permanecem calculados a partir
+da fonte analítica.
+
 ## Modelo inicial
 
 - `core.companies`: empresas fictícias isoladas por identificador;
