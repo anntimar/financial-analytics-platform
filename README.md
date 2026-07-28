@@ -282,6 +282,14 @@ nota, o usuário responsável e os horários de criação e atualização em
 `core.alert_actions`, enquanto os valores financeiros permanecem calculados a partir
 da fonte analítica.
 
+## Relatórios executivos
+
+`GET /api/v1/reports/executive` consolida KPIs, evolução mensal, despesas por
+categoria, fluxo de caixa, inadimplência, orçamento, saldos e alertas em um único
+documento JSON. A variante `GET /api/v1/reports/executive.csv` entrega os mesmos
+grupos em formato tabular UTF-8 com BOM. Ambos respeitam autenticação e isolamento
+por empresa, e a visão executiva oferece download direto nos dois formatos.
+
 ## Modelo inicial
 
 - `core.companies`: empresas fictícias isoladas por identificador;
