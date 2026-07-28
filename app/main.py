@@ -12,6 +12,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.budgets import router as budgets_router
 from app.api.routes.categories import router as categories_router
 from app.api.routes.companies import router as companies_router
+from app.api.routes.cost_centers import router as cost_centers_router
 from app.api.routes.health import router as health_router
 from app.api.routes.imports import router as imports_router
 from app.api.routes.monitoring import router as monitoring_router
@@ -61,6 +62,7 @@ app.include_router(accounts_router, prefix="/api/v1", dependencies=authenticated
 app.include_router(alerts_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(budgets_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(companies_router, prefix="/api/v1", dependencies=authenticated)
+app.include_router(cost_centers_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(categories_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(transactions_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(imports_router, prefix="/api/v1", dependencies=editor)

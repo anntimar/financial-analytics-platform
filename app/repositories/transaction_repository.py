@@ -38,6 +38,7 @@ class TransactionRepository:
         minimum_amount: Decimal | None = None,
         maximum_amount: Decimal | None = None,
         subcategory_id: uuid.UUID | None = None,
+        cost_center_id: uuid.UUID | None = None,
     ) -> tuple[list[Transaction], int]:
         filters = [Transaction.company_id == company_id]
         if start_date:
@@ -50,6 +51,8 @@ class TransactionRepository:
             filters.append(Transaction.category_id == category_id)
         if subcategory_id:
             filters.append(Transaction.subcategory_id == subcategory_id)
+        if cost_center_id:
+            filters.append(Transaction.cost_center_id == cost_center_id)
         if account_id:
             filters.append(Transaction.account_id == account_id)
         if status:
