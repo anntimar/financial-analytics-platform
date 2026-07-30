@@ -8,6 +8,7 @@ from app.core.security import CurrentUser, require_roles
 from app.schemas.auth import (
     LoginRequest,
     TokenResponse,
+    UserAuditEventResponse,
     UserCreate,
     UserResponse,
     UserRole,
@@ -37,8 +38,13 @@ def me(user: CurrentUser) -> UserResponse:
 
 
 @router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(data: UserCreate, service: Service, _admin: Admin) -> UserResponse:
-    return UserResponse.model_validate(service.create_user(data))
+def create_user(
+    data: UserCreate,
+    service: Service,
+    admin: CurrentUser,
+    _admin: Admin,
+) -> UserResponse:
+    return UserResponse.model_validate(service.create_user(data, actor_id=admin.id))
 
 
 @router.get("/users", response_model=Page[UserResponse])
@@ -62,3 +68,15 @@ def update_user(
     _admin: Admin,
 ) -> UserResponse:
     return UserResponse.model_validate(service.update_user(user_id, data, admin.id))
+
+
+@router.get("/audit-events", response_model=Page[UserAuditEventResponse])
+def list_audit_events(
+    service: Service,
+    _admin: Admin,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    target_user_id: uuid.UUID | None = None,
+    action: str | None = None,
+) -> Page[UserAuditEventResponse]:
+    return service.list_audit_events(page, page_size, target_user_id, action)

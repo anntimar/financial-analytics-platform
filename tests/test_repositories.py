@@ -9,11 +9,13 @@ from app.models.company import Company
 from app.models.import_batch import ImportBatch
 from app.models.transaction import Transaction
 from app.models.user import User
+from app.models.user_audit_event import UserAuditEvent
 from app.pipelines.validation import PreparedTransaction, ValidationIssueData
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.company_repository import CompanyRepository
 from app.repositories.import_repository import ImportRepository
 from app.repositories.transaction_repository import TransactionRepository
+from app.repositories.user_audit_repository import UserAuditRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import UserRole, UserUpdate
 from app.schemas.category import CategoryCreate, CategoryUpdate, TransactionType
@@ -203,3 +205,25 @@ def test_user_repository_queries_and_create() -> None:
     assert updated.role == "admin"
     assert not updated.is_active
     session.add.assert_called_with(user)
+
+
+def test_user_audit_repository_creates_and_filters_events() -> None:
+    session = MagicMock()
+    actor_id = uuid.uuid4()
+    target_id = uuid.uuid4()
+    event = UserAuditEvent(
+        id=uuid.uuid4(),
+        actor_user_id=actor_id,
+        target_user_id=target_id,
+        action="user_updated",
+        changes={"role": {"from": "analyst", "to": "manager"}},
+    )
+    session.scalar.side_effect = [1, 2]
+    session.scalars.return_value = [event]
+    repository = UserAuditRepository(session)
+
+    created = repository.create(actor_id, target_id, "user_created", {"name": {"to": "Novo"}})
+    assert created.target_user_id == target_id
+    assert repository.list(1, 20, None, None) == ([event], 1)
+    assert repository.list(2, 10, target_id, "user_updated") == ([event], 2)
+    assert session.commit.called

@@ -317,6 +317,8 @@ Administradores também contam com a página **Usuários e Acessos** para criar
 acessos, vincular analistas e gestores a empresas, alterar perfis e
 ativar ou desativar usuários. A API administrativa está disponível em
 `GET /api/v1/auth/users` e `PATCH /api/v1/auth/users/{user_id}`.
+Criações e alterações geram eventos imutáveis de auditoria, consultáveis em
+`GET /api/v1/auth/audit-events` e na aba **Histórico de auditoria**.
 
 Valores monetários são armazenados como `NUMERIC(14,2)`. Datas de negócio usam `DATE`;
 datas de auditoria usam `TIMESTAMPTZ`.
