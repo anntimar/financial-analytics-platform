@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     app_name: str = "FinAnalytics"
     app_env: Literal["development", "test", "production"] = "development"
     app_debug: bool = False
-    app_version: str = "0.1.0"
+    app_version: str = "1.0.0"
     log_level: str = "INFO"
     secret_key: str = "development-only-change-me-at-least-32-characters"
     access_token_expire_minutes: int = 60
