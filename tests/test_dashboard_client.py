@@ -56,6 +56,35 @@ def test_dashboard_client_exposes_api_error_detail() -> None:
         client.companies()
 
 
+def test_dashboard_client_lists_transaction_filters_and_options() -> None:
+    company_id = uuid.uuid4()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/transactions":
+            assert request.url.params["transaction_type"] == "expense"
+            assert request.url.params["status"] == "paid"
+            assert "account_id" not in request.url.params
+            return httpx.Response(200, json={"items": [], "total": 0})
+        assert request.url.path in {"/categories", "/accounts", "/cost-centers"}
+        assert request.url.params["company_id"] == str(company_id)
+        return httpx.Response(200, json={"items": [], "total": 0})
+
+    client = FinAnalyticsClient("http://test", transport=httpx.MockTransport(handler))
+    assert client.category_options(company_id) == []
+    assert client.account_options(company_id) == []
+    assert client.cost_center_options(company_id) == []
+    result = client.transactions(
+        company_id,
+        date(2026, 1, 1),
+        date(2026, 12, 31),
+        transaction_type="expense",
+        status="paid",
+        category_id=uuid.uuid4(),
+        cost_center_id=uuid.uuid4(),
+    )
+    assert result["total"] == 0
+
+
 def test_dashboard_formatters() -> None:
     assert format_currency("1250.9") == "R$ 1.250,90"
     assert format_percentage("12.5") == "12,50%"

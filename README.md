@@ -309,6 +309,10 @@ transações aceita `cost_center_id`, permitindo separar áreas e unidades inter
 e quantidade de lançamentos por centro de custo. O ranking também aparece no
 relatório executivo e na página **Centros de Custo** do dashboard.
 
+A página **Lançamentos** permite explorar até 100 transações por consulta, com
+filtros de período, tipo, status, categoria, conta e centro de custo, além de
+exportação CSV do resultado exibido.
+
 Valores monetários são armazenados como `NUMERIC(14,2)`. Datas de negócio usam `DATE`;
 datas de auditoria usam `TIMESTAMPTZ`.
 

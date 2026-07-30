@@ -58,6 +58,60 @@ class FinAnalyticsClient:
         )
         return cast(list[dict[str, Any]], response["items"])
 
+    def category_options(self, company_id: uuid.UUID | str) -> list[dict[str, Any]]:
+        return self._paged_items("/categories", company_id=company_id, page=1, page_size=100)
+
+    def account_options(self, company_id: uuid.UUID | str) -> list[dict[str, Any]]:
+        return self._paged_items(
+            "/accounts",
+            company_id=company_id,
+            page=1,
+            page_size=100,
+            active_only=True,
+        )
+
+    def cost_center_options(self, company_id: uuid.UUID | str) -> list[dict[str, Any]]:
+        return self._paged_items("/cost-centers", company_id=company_id, page=1, page_size=100)
+
+    def transactions(
+        self,
+        company_id: uuid.UUID | str,
+        start_date: date,
+        end_date: date,
+        transaction_type: str | None = None,
+        status: str | None = None,
+        category_id: uuid.UUID | str | None = None,
+        account_id: uuid.UUID | str | None = None,
+        cost_center_id: uuid.UUID | str | None = None,
+    ) -> dict[str, Any]:
+        params = {
+            "company_id": str(company_id),
+            "page": 1,
+            "page_size": 100,
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+        }
+        optional = {
+            "transaction_type": transaction_type,
+            "status": status,
+            "category_id": str(category_id) if category_id else None,
+            "account_id": str(account_id) if account_id else None,
+            "cost_center_id": str(cost_center_id) if cost_center_id else None,
+        }
+        params.update({key: value for key, value in optional.items() if value})
+        return cast(
+            dict[str, Any],
+            self._request("GET", "/transactions", params=params),
+        )
+
+    def _paged_items(self, path: str, **params: Any) -> list[dict[str, Any]]:
+        normalized = {
+            key: str(value) if isinstance(value, uuid.UUID) else value
+            for key, value in params.items()
+        }
+        response = cast(dict[str, Any], self._request("GET", path, params=normalized))
+        return cast(list[dict[str, Any]], response["items"])
+
     def executive_summary(
         self, company_id: uuid.UUID | str, start_date: date, end_date: date
     ) -> dict[str, Any]:
