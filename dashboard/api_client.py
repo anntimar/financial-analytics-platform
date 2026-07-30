@@ -132,6 +132,35 @@ class FinAnalyticsClient:
             self._analytics("/alerts", company_id, start_date, end_date),
         )
 
+    def executive_report(
+        self, company_id: uuid.UUID | str, start_date: date, end_date: date
+    ) -> dict[str, Any]:
+        return cast(
+            dict[str, Any],
+            self._analytics("/reports/executive", company_id, start_date, end_date),
+        )
+
+    def executive_report_csv(
+        self, company_id: uuid.UUID | str, start_date: date, end_date: date
+    ) -> bytes:
+        try:
+            response = self._client.get(
+                "/reports/executive.csv",
+                params={
+                    "company_id": str(company_id),
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat(),
+                },
+            )
+            response.raise_for_status()
+            return response.content
+        except httpx.RequestError as exc:
+            raise DashboardAPIError(
+                "Não foi possível conectar à API. Verifique se o serviço está ativo."
+            ) from exc
+        except httpx.HTTPStatusError as exc:
+            raise DashboardAPIError(exc.response.text) from exc
+
     def update_alert_action(
         self,
         company_id: uuid.UUID | str,

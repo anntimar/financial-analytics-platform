@@ -1,3 +1,4 @@
+import json
 from decimal import Decimal
 
 import pandas as pd
@@ -33,6 +34,8 @@ try:
     categories = client.categories(company["id"], start_date, end_date)
     cash_flow = client.cash_flow(company["id"], start_date, end_date)
     overdue = client.overdue(company["id"], start_date, end_date)
+    report = client.executive_report(company["id"], start_date, end_date)
+    report_csv = client.executive_report_csv(company["id"], start_date, end_date)
 except DashboardAPIError as exc:
     st.error(str(exc))
     st.stop()
@@ -132,3 +135,22 @@ if cash_flow:
     st.plotly_chart(figure, width="stretch")
 else:
     st.info("Não há dados de fluxo de caixa no período.")
+
+st.divider()
+st.subheader("Exportar relatório executivo")
+st.caption("Baixe o consolidado do período para análise, auditoria ou compartilhamento.")
+csv_col, json_col = st.columns(2)
+csv_col.download_button(
+    "Baixar CSV",
+    data=report_csv,
+    file_name=f"relatorio-executivo-{start_date}-{end_date}.csv",
+    mime="text/csv",
+    width="stretch",
+)
+json_col.download_button(
+    "Baixar JSON",
+    data=json.dumps(report, ensure_ascii=False, indent=2).encode(),
+    file_name=f"relatorio-executivo-{start_date}-{end_date}.json",
+    mime="application/json",
+    width="stretch",
+)

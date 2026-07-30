@@ -22,6 +22,7 @@ from app.services.category_service import CategoryService
 from app.services.company_service import CompanyService
 from app.services.import_service import ImportService
 from app.services.predictive_service import PredictiveService
+from app.services.report_service import ReportService
 from app.services.transaction_service import TransactionService
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
@@ -60,6 +61,15 @@ def get_analytics_service(session: DatabaseSession) -> AnalyticsService:
 def get_predictive_service(session: DatabaseSession) -> PredictiveService:
     return PredictiveService(
         AnalyticsRepository(session),
+        CompanyRepository(session),
+    )
+
+
+def get_report_service(session: DatabaseSession) -> ReportService:
+    analytics = get_analytics_service(session)
+    return ReportService(
+        analytics,
+        AlertService(analytics, AlertActionRepository(session)),
         CompanyRepository(session),
     )
 
