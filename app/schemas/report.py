@@ -1,13 +1,14 @@
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.account import AccountBalance
 from app.schemas.alert import FinancialAlert
 from app.schemas.analytics import (
     CashFlowPoint,
     CategorySummary,
+    CostCenterSummary,
     ExecutiveSummary,
     MonthlyFinancialSummary,
     OverdueSummary,
@@ -24,6 +25,7 @@ class ExecutiveReport(BaseModel):
     summary: ExecutiveSummary
     monthly: list[MonthlyFinancialSummary]
     expense_categories: list[CategorySummary]
+    cost_centers: list[CostCenterSummary] = Field(default_factory=list)
     cash_flow: list[CashFlowPoint]
     overdue: OverdueSummary
     budget_comparison: list[BudgetComparison]

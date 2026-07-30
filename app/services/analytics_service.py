@@ -9,6 +9,7 @@ from app.schemas.account import AccountBalance
 from app.schemas.analytics import (
     CashFlowPoint,
     CategorySummary,
+    CostCenterSummary,
     ExecutiveSummary,
     MonthlyFinancialSummary,
     OverdueSummary,
@@ -128,6 +129,25 @@ class AnalyticsService:
                 )
             )
         return result
+
+    def cost_center_summary(
+        self, company_id: uuid.UUID, start_date: date, end_date: date
+    ) -> list[CostCenterSummary]:
+        self._validate(company_id, start_date, end_date)
+        rows = self.repository.cost_center_summary(company_id, start_date, end_date)
+        grand_total = sum((Decimal(row["total_amount"]) for row in rows), start=Decimal(0))
+        return [
+            CostCenterSummary(
+                cost_center_id=row["cost_center_id"],
+                cost_center_name=row["cost_center_name"],
+                cost_center_code=row["cost_center_code"],
+                total_amount=Decimal(row["total_amount"]),
+                transaction_count=row["transaction_count"],
+                share_percentage=percentage(Decimal(row["total_amount"]), grand_total)
+                or Decimal(0),
+            )
+            for row in rows
+        ]
 
     def overdue_summary(
         self, company_id: uuid.UUID, start_date: date, end_date: date

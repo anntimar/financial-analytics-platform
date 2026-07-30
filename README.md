@@ -305,6 +305,10 @@ Centros de custo são gerenciados por `/api/v1/cost-centers`, pertencem a uma
 empresa e podem ser vinculados opcionalmente às transações. A listagem de
 transações aceita `cost_center_id`, permitindo separar áreas e unidades internas.
 
+`GET /api/v1/analytics/cost-centers` calcula despesas pagas, participação percentual
+e quantidade de lançamentos por centro de custo. O ranking também aparece no
+relatório executivo e na página **Centros de Custo** do dashboard.
+
 Valores monetários são armazenados como `NUMERIC(14,2)`. Datas de negócio usam `DATE`;
 datas de auditoria usam `TIMESTAMPTZ`.
 

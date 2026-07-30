@@ -179,6 +179,31 @@ def test_account_balances_calculates_current_balance() -> None:
     assert result[0].current_balance == Decimal("1300")
 
 
+def test_cost_center_summary_calculates_share() -> None:
+    service, repository, company_id = service_with_repository()
+    repository.cost_center_summary.return_value = [
+        {
+            "cost_center_id": uuid.uuid4(),
+            "cost_center_name": "Marketing",
+            "cost_center_code": "MKT",
+            "total_amount": Decimal("750"),
+            "transaction_count": 3,
+        },
+        {
+            "cost_center_id": uuid.uuid4(),
+            "cost_center_name": "Operações",
+            "cost_center_code": None,
+            "total_amount": Decimal("250"),
+            "transaction_count": 1,
+        },
+    ]
+
+    result = service.cost_center_summary(company_id, START_DATE, END_DATE)
+
+    assert result[0].share_percentage == Decimal("75.00")
+    assert result[1].share_percentage == Decimal("25.00")
+
+
 def test_analytics_validates_period_and_company() -> None:
     service, _, company_id = service_with_repository()
     with pytest.raises(AppError, match="start_date"):
@@ -212,6 +237,7 @@ def test_analytics_repository_builds_all_queries() -> None:
     assert repository.overdue_summary(company_id, START_DATE, END_DATE)["total_receivables"] == 0
     assert repository.budget_comparison(company_id, START_DATE, END_DATE) == []
     assert repository.account_balances(company_id, START_DATE, END_DATE) == []
+    assert repository.cost_center_summary(company_id, START_DATE, END_DATE) == []
 
 
 def test_executive_summary_endpoint() -> None:
@@ -244,3 +270,21 @@ def test_executive_summary_endpoint() -> None:
 
     assert response.status_code == 200
     assert response.json()["net_result"] == "60"
+
+
+def test_cost_center_summary_endpoint() -> None:
+    company_id = uuid.uuid4()
+    service = Mock()
+    service.cost_center_summary.return_value = []
+    app.dependency_overrides[get_analytics_service] = lambda: service
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/analytics/cost-centers",
+            params={
+                "company_id": str(company_id),
+                "start_date": START_DATE.isoformat(),
+                "end_date": END_DATE.isoformat(),
+            },
+        )
+    assert response.status_code == 200
+    assert response.json() == []

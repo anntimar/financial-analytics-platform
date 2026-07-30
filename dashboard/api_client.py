@@ -100,6 +100,14 @@ class FinAnalyticsClient:
             self._analytics("/analytics/cash-flow", company_id, start_date, end_date),
         )
 
+    def cost_centers(
+        self, company_id: uuid.UUID | str, start_date: date, end_date: date
+    ) -> list[dict[str, Any]]:
+        return cast(
+            list[dict[str, Any]],
+            self._analytics("/analytics/cost-centers", company_id, start_date, end_date),
+        )
+
     def overdue(
         self, company_id: uuid.UUID | str, start_date: date, end_date: date
     ) -> dict[str, Any]:

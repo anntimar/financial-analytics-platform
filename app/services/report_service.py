@@ -38,6 +38,7 @@ class ReportService:
             expense_categories=self.analytics.category_summary(
                 company_id, start_date, end_date, TransactionType.EXPENSE
             ),
+            cost_centers=self.analytics.cost_center_summary(company_id, start_date, end_date),
             cash_flow=self.analytics.cash_flow(company_id, start_date, end_date),
             overdue=self.analytics.overdue_summary(company_id, start_date, end_date),
             budget_comparison=self.analytics.budget_comparison(company_id, start_date, end_date),
@@ -108,6 +109,13 @@ class ReportService:
                 "total_amount",
                 category_item.total_amount,
                 dimension=category_item.category_name,
+            )
+        for cost_center in report.cost_centers:
+            row(
+                "cost_centers",
+                "total_amount",
+                cost_center.total_amount,
+                dimension=cost_center.cost_center_name,
             )
         for cash_item in report.cash_flow:
             row(
