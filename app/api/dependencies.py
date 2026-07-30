@@ -4,6 +4,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.repositories.account_repository import AccountRepository
 from app.repositories.analytics_repository import AnalyticsRepository
 from app.repositories.budget_repository import BudgetRepository
 from app.repositories.category_repository import CategoryRepository
@@ -11,6 +12,7 @@ from app.repositories.company_repository import CompanyRepository
 from app.repositories.import_repository import ImportRepository
 from app.repositories.transaction_repository import TransactionRepository
 from app.repositories.user_repository import UserRepository
+from app.services.account_service import AccountService
 from app.services.analytics_service import AnalyticsService
 from app.services.auth_service import AuthService
 from app.services.budget_service import BudgetService
@@ -21,6 +23,10 @@ from app.services.predictive_service import PredictiveService
 from app.services.transaction_service import TransactionService
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
+
+
+def get_account_service(session: DatabaseSession) -> AccountService:
+    return AccountService(AccountRepository(session), CompanyRepository(session))
 
 
 def get_auth_service(session: DatabaseSession) -> AuthService:
@@ -62,6 +68,7 @@ def get_transaction_service(session: DatabaseSession) -> TransactionService:
         TransactionRepository(session),
         CompanyRepository(session),
         CategoryRepository(session),
+        AccountRepository(session),
     )
 
 

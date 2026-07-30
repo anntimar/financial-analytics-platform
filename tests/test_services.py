@@ -291,3 +291,22 @@ def test_transaction_update_paid_requires_payment_date() -> None:
             repository.get.return_value.id,
             TransactionUpdate(status=TransactionStatus.PAID),
         )
+
+
+def test_transaction_service_validates_account() -> None:
+    company_id = uuid.uuid4()
+    account_id = uuid.uuid4()
+    accounts = Mock()
+    service = TransactionService(Mock(), Mock(), Mock(), accounts)
+
+    accounts.get.return_value = None
+    with pytest.raises(NotFoundError):
+        service._validate_account(account_id, company_id)
+    accounts.get.return_value = SimpleNamespace(company_id=uuid.uuid4(), is_active=True)
+    with pytest.raises(AppError, match="não pertence"):
+        service._validate_account(account_id, company_id)
+    accounts.get.return_value = SimpleNamespace(company_id=company_id, is_active=False)
+    with pytest.raises(AppError, match="inativa"):
+        service._validate_account(account_id, company_id)
+    accounts.get.return_value = SimpleNamespace(company_id=company_id, is_active=True)
+    service._validate_account(account_id, company_id)

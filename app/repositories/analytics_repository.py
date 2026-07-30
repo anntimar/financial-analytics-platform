@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import Date, case, func, literal, select
 from sqlalchemy.orm import Session
 
+from app.models.account import Account
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.transaction import Transaction
@@ -269,6 +270,52 @@ class AnalyticsRepository:
                 Budget.reference_month <= end_date,
             )
             .order_by(Budget.reference_month, Budget.transaction_type, Category.name)
+        )
+        return [dict(row) for row in self.session.execute(statement).mappings()]
+
+    def account_balances(
+        self, company_id: uuid.UUID, start_date: date, end_date: date
+    ) -> list[dict[str, Any]]:
+        statement = (
+            select(
+                Account.id.label("account_id"),
+                Account.name.label("account_name"),
+                Account.account_type,
+                Account.opening_balance,
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (Transaction.transaction_type == "revenue", Transaction.amount),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("inflows"),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (Transaction.transaction_type == "expense", Transaction.amount),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("outflows"),
+            )
+            .outerjoin(
+                Transaction,
+                (Transaction.account_id == Account.id)
+                & (Transaction.status == "paid")
+                & (Transaction.competence_date >= start_date)
+                & (Transaction.competence_date <= end_date),
+            )
+            .where(Account.company_id == company_id, Account.is_active.is_(True))
+            .group_by(
+                Account.id,
+                Account.name,
+                Account.account_type,
+                Account.opening_balance,
+            )
+            .order_by(Account.name)
         )
         return [dict(row) for row in self.session.execute(statement).mappings()]
 

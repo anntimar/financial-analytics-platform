@@ -5,6 +5,7 @@ from decimal import Decimal
 from app.core.exceptions import AppError, NotFoundError
 from app.models.category import Category
 from app.models.transaction import Transaction
+from app.repositories.account_repository import AccountRepository
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.company_repository import CompanyRepository
 from app.repositories.transaction_repository import TransactionRepository
@@ -24,10 +25,21 @@ class TransactionService:
         repository: TransactionRepository,
         company_repository: CompanyRepository,
         category_repository: CategoryRepository,
+        account_repository: AccountRepository | None = None,
     ) -> None:
         self.repository = repository
         self.company_repository = company_repository
         self.category_repository = category_repository
+        self.account_repository = account_repository
+
+    def _validate_account(self, account_id: uuid.UUID, company_id: uuid.UUID) -> None:
+        account = self.account_repository.get(account_id) if self.account_repository else None
+        if account is None:
+            raise NotFoundError("Conta")
+        if account.company_id != company_id:
+            raise AppError("A conta não pertence à empresa informada.")
+        if not account.is_active:
+            raise AppError("A conta informada está inativa.")
 
     def _validate_category(
         self,
@@ -48,6 +60,8 @@ class TransactionService:
         if self.company_repository.get(data.company_id) is None:
             raise NotFoundError("Empresa")
         self._validate_category(data.category_id, data.company_id, data.transaction_type)
+        if data.account_id:
+            self._validate_account(data.account_id, data.company_id)
         return self.repository.create(data)
 
     def get(self, transaction_id: uuid.UUID) -> Transaction:
@@ -68,6 +82,7 @@ class TransactionService:
         status: TransactionStatus | None,
         minimum_amount: Decimal | None,
         maximum_amount: Decimal | None,
+        account_id: uuid.UUID | None = None,
     ) -> Page[TransactionResponse]:
         if start_date and end_date and start_date > end_date:
             raise AppError("start_date não pode ser posterior a end_date.")
@@ -85,6 +100,7 @@ class TransactionService:
             end_date=end_date,
             transaction_type=transaction_type,
             category_id=category_id,
+            account_id=account_id,
             status=status,
             minimum_amount=minimum_amount,
             maximum_amount=maximum_amount,
@@ -95,6 +111,8 @@ class TransactionService:
 
     def update(self, transaction_id: uuid.UUID, data: TransactionUpdate) -> Transaction:
         transaction = self.get(transaction_id)
+        if data.account_id:
+            self._validate_account(data.account_id, transaction.company_id)
         if data.category_id:
             self._validate_category(
                 data.category_id,

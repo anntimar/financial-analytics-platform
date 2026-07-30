@@ -25,6 +25,9 @@ class Transaction(Base):
     company_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("core.companies.id"), nullable=False, index=True
     )
+    account_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("core.accounts.id"), nullable=True, index=True
+    )
     category_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("core.categories.id"), nullable=False, index=True
     )

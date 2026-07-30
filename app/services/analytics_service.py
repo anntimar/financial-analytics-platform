@@ -5,6 +5,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from app.core.exceptions import AppError, NotFoundError
 from app.repositories.analytics_repository import AnalyticsRepository
 from app.repositories.company_repository import CompanyRepository
+from app.schemas.account import AccountBalance
 from app.schemas.analytics import (
     CashFlowPoint,
     CategorySummary,
@@ -164,6 +165,28 @@ class AnalyticsService:
                     realized_amount=realized,
                     variance_amount=variance,
                     variance_percentage=percentage(variance, planned),
+                )
+            )
+        return result
+
+    def account_balances(
+        self, company_id: uuid.UUID, start_date: date, end_date: date
+    ) -> list[AccountBalance]:
+        self._validate(company_id, start_date, end_date)
+        result = []
+        for row in self.repository.account_balances(company_id, start_date, end_date):
+            opening = Decimal(row["opening_balance"])
+            inflows = Decimal(row["inflows"])
+            outflows = Decimal(row["outflows"])
+            result.append(
+                AccountBalance(
+                    account_id=row["account_id"],
+                    account_name=row["account_name"],
+                    account_type=row["account_type"],
+                    opening_balance=opening,
+                    inflows=inflows,
+                    outflows=outflows,
+                    current_balance=opening + inflows - outflows,
                 )
             )
         return result

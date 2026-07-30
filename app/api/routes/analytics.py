@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.api.dependencies import get_analytics_service
 from app.core.security import CurrentUser, ensure_company_access
+from app.schemas.account import AccountBalance
 from app.schemas.analytics import (
     CashFlowPoint,
     CategorySummary,
@@ -93,3 +94,15 @@ def budget_comparison(
 ) -> list[BudgetComparison]:
     ensure_company_access(user, company_id)
     return service.budget_comparison(company_id, start_date, end_date)
+
+
+@router.get("/account-balances", response_model=list[AccountBalance])
+def account_balances(
+    company_id: uuid.UUID,
+    start_date: DateQuery,
+    end_date: DateQuery,
+    service: Service,
+    user: CurrentUser,
+) -> list[AccountBalance]:
+    ensure_company_access(user, company_id)
+    return service.account_balances(company_id, start_date, end_date)
