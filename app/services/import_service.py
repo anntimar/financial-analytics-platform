@@ -10,6 +10,7 @@ from app.pipelines.readers.csv_reader import read_csv_rows
 from app.pipelines.validation import ValidationIssueData, prepare_transaction
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.company_repository import CompanyRepository
+from app.repositories.cost_center_repository import CostCenterRepository
 from app.repositories.import_repository import ImportRepository
 from app.repositories.subcategory_repository import SubcategoryRepository
 from app.schemas.common import Page
@@ -29,11 +30,13 @@ class ImportService:
         company_repository: CompanyRepository,
         category_repository: CategoryRepository,
         subcategory_repository: SubcategoryRepository | None = None,
+        cost_center_repository: CostCenterRepository | None = None,
     ) -> None:
         self.repository = repository
         self.company_repository = company_repository
         self.category_repository = category_repository
         self.subcategory_repository = subcategory_repository
+        self.cost_center_repository = cost_center_repository
 
     def import_transactions(
         self, company_id: uuid.UUID, file_name: str, content: bytes
@@ -139,6 +142,31 @@ class ImportService:
                             prepared.transaction_hash,
                         )
                     )
+
+                if prepared is not None and prepared.cost_center_id:
+                    cost_center = (
+                        self.cost_center_repository.get(prepared.cost_center_id)
+                        if self.cost_center_repository
+                        else None
+                    )
+                    if cost_center is None:
+                        issues.append(
+                            ValidationIssueData(
+                                "cost_center_id",
+                                "cost_center_not_found",
+                                "Centro de custo não encontrado.",
+                                str(prepared.cost_center_id),
+                            )
+                        )
+                    elif cost_center.company_id != company_id:
+                        issues.append(
+                            ValidationIssueData(
+                                "cost_center_id",
+                                "cost_center_company_mismatch",
+                                "Centro de custo não pertence à empresa.",
+                                str(prepared.cost_center_id),
+                            )
+                        )
 
                 if issues or prepared is None:
                     rejected += 1

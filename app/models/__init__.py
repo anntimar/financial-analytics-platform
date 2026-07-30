@@ -3,6 +3,7 @@ from app.models.alert_action import AlertAction
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.company import Company
+from app.models.cost_center import CostCenter
 from app.models.data_quality_issue import DataQualityIssue
 from app.models.import_batch import ImportBatch
 from app.models.raw_imported_transaction import RawImportedTransaction
@@ -16,6 +17,7 @@ __all__ = [
     "Budget",
     "Category",
     "Company",
+    "CostCenter",
     "DataQualityIssue",
     "ImportBatch",
     "RawImportedTransaction",

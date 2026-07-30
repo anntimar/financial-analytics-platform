@@ -44,7 +44,7 @@ def test_database_migrations_and_analytics_views() -> None:
             )
         )
 
-    assert revision == "20260728_0008"
+    assert revision == "20260728_0009"
     assert schemas == {"raw", "core", "analytics"}
     assert views == {
         "monthly_financial_summary",

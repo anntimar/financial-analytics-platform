@@ -8,6 +8,7 @@ from app.models.transaction import Transaction
 from app.repositories.account_repository import AccountRepository
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.company_repository import CompanyRepository
+from app.repositories.cost_center_repository import CostCenterRepository
 from app.repositories.subcategory_repository import SubcategoryRepository
 from app.repositories.transaction_repository import TransactionRepository
 from app.schemas.category import TransactionType
@@ -28,12 +29,25 @@ class TransactionService:
         category_repository: CategoryRepository,
         account_repository: AccountRepository | None = None,
         subcategory_repository: SubcategoryRepository | None = None,
+        cost_center_repository: CostCenterRepository | None = None,
     ) -> None:
         self.repository = repository
         self.company_repository = company_repository
         self.category_repository = category_repository
         self.account_repository = account_repository
         self.subcategory_repository = subcategory_repository
+        self.cost_center_repository = cost_center_repository
+
+    def _validate_cost_center(self, cost_center_id: uuid.UUID, company_id: uuid.UUID) -> None:
+        item = (
+            self.cost_center_repository.get(cost_center_id) if self.cost_center_repository else None
+        )
+        if item is None:
+            raise NotFoundError("Centro de custo")
+        if item.company_id != company_id:
+            raise AppError("O centro de custo não pertence à empresa informada.")
+        if not item.is_active:
+            raise AppError("O centro de custo informado está inativo.")
 
     def _validate_subcategory(
         self,
@@ -80,6 +94,8 @@ class TransactionService:
         self._validate_category(data.category_id, data.company_id, data.transaction_type)
         if data.subcategory_id:
             self._validate_subcategory(data.subcategory_id, data.category_id)
+        if data.cost_center_id:
+            self._validate_cost_center(data.cost_center_id, data.company_id)
         if data.account_id:
             self._validate_account(data.account_id, data.company_id)
         return self.repository.create(data)
@@ -104,6 +120,7 @@ class TransactionService:
         maximum_amount: Decimal | None,
         account_id: uuid.UUID | None = None,
         subcategory_id: uuid.UUID | None = None,
+        cost_center_id: uuid.UUID | None = None,
     ) -> Page[TransactionResponse]:
         if start_date and end_date and start_date > end_date:
             raise AppError("start_date não pode ser posterior a end_date.")
@@ -123,6 +140,7 @@ class TransactionService:
             category_id=category_id,
             account_id=account_id,
             subcategory_id=subcategory_id,
+            cost_center_id=cost_center_id,
             status=status,
             minimum_amount=minimum_amount,
             maximum_amount=maximum_amount,
@@ -135,6 +153,8 @@ class TransactionService:
         transaction = self.get(transaction_id)
         if data.account_id:
             self._validate_account(data.account_id, transaction.company_id)
+        if data.cost_center_id:
+            self._validate_cost_center(data.cost_center_id, transaction.company_id)
         if data.category_id:
             self._validate_category(
                 data.category_id,

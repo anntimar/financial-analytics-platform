@@ -301,6 +301,10 @@ Subcategorias são gerenciadas por `/api/v1/subcategories` e podem ser associada
 opcionalmente às transações. O vínculo é validado contra a categoria principal, e
 `GET /api/v1/transactions` aceita `subcategory_id` como filtro.
 
+Centros de custo são gerenciados por `/api/v1/cost-centers`, pertencem a uma
+empresa e podem ser vinculados opcionalmente às transações. A listagem de
+transações aceita `cost_center_id`, permitindo separar áreas e unidades internas.
+
 Valores monetários são armazenados como `NUMERIC(14,2)`. Datas de negócio usam `DATE`;
 datas de auditoria usam `TIMESTAMPTZ`.
 

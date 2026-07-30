@@ -21,6 +21,7 @@ class TransactionCreate(BaseModel):
     account_id: uuid.UUID | None = None
     category_id: uuid.UUID
     subcategory_id: uuid.UUID | None = None
+    cost_center_id: uuid.UUID | None = None
     transaction_type: TransactionType
     description: str = Field(min_length=3, max_length=255)
     amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
@@ -43,6 +44,7 @@ class TransactionUpdate(BaseModel):
     account_id: uuid.UUID | None = None
     category_id: uuid.UUID | None = None
     subcategory_id: uuid.UUID | None = None
+    cost_center_id: uuid.UUID | None = None
     description: str | None = Field(default=None, min_length=3, max_length=255)
     amount: Decimal | None = Field(default=None, gt=0, max_digits=14, decimal_places=2)
     competence_date: date | None = None
@@ -60,6 +62,7 @@ class TransactionResponse(BaseModel):
     account_id: uuid.UUID | None
     category_id: uuid.UUID
     subcategory_id: uuid.UUID | None = None
+    cost_center_id: uuid.UUID | None = None
     transaction_type: TransactionType
     description: str
     amount: Decimal

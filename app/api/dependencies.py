@@ -10,6 +10,7 @@ from app.repositories.analytics_repository import AnalyticsRepository
 from app.repositories.budget_repository import BudgetRepository
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.company_repository import CompanyRepository
+from app.repositories.cost_center_repository import CostCenterRepository
 from app.repositories.import_repository import ImportRepository
 from app.repositories.subcategory_repository import SubcategoryRepository
 from app.repositories.transaction_repository import TransactionRepository
@@ -21,6 +22,7 @@ from app.services.auth_service import AuthService
 from app.services.budget_service import BudgetService
 from app.services.category_service import CategoryService
 from app.services.company_service import CompanyService
+from app.services.cost_center_service import CostCenterService
 from app.services.import_service import ImportService
 from app.services.predictive_service import PredictiveService
 from app.services.report_service import ReportService
@@ -84,6 +86,13 @@ def get_category_service(session: DatabaseSession) -> CategoryService:
     return CategoryService(CategoryRepository(session), CompanyRepository(session))
 
 
+def get_cost_center_service(session: DatabaseSession) -> CostCenterService:
+    return CostCenterService(
+        CostCenterRepository(session),
+        CompanyRepository(session),
+    )
+
+
 def get_subcategory_service(session: DatabaseSession) -> SubcategoryService:
     return SubcategoryService(
         SubcategoryRepository(session),
@@ -98,6 +107,7 @@ def get_transaction_service(session: DatabaseSession) -> TransactionService:
         CategoryRepository(session),
         AccountRepository(session),
         SubcategoryRepository(session),
+        CostCenterRepository(session),
     )
 
 
@@ -107,4 +117,5 @@ def get_import_service(session: DatabaseSession) -> ImportService:
         CompanyRepository(session),
         CategoryRepository(session),
         SubcategoryRepository(session),
+        CostCenterRepository(session),
     )

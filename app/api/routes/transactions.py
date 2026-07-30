@@ -44,6 +44,7 @@ def list_transactions(
     category_id: uuid.UUID | None = None,
     account_id: uuid.UUID | None = None,
     subcategory_id: uuid.UUID | None = None,
+    cost_center_id: uuid.UUID | None = None,
     status_filter: Annotated[TransactionStatus | None, Query(alias="status")] = None,
     minimum_amount: Annotated[Decimal | None, Query(ge=0)] = None,
     maximum_amount: Annotated[Decimal | None, Query(ge=0)] = None,
@@ -62,6 +63,7 @@ def list_transactions(
         maximum_amount=maximum_amount,
         account_id=account_id,
         subcategory_id=subcategory_id,
+        cost_center_id=cost_center_id,
     )
 
 
