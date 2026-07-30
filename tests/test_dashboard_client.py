@@ -91,8 +91,12 @@ def test_dashboard_client_manages_users() -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "GET":
-            assert request.url.path == "/auth/users"
-            assert request.url.params["company_id"] == str(company_id)
+            assert request.url.path in {"/auth/users", "/auth/audit-events"}
+            if request.url.path == "/auth/users":
+                assert request.url.params["company_id"] == str(company_id)
+            else:
+                assert request.url.params["target_user_id"] == str(user_id)
+                assert request.url.params["action"] == "user_updated"
             return httpx.Response(200, json={"items": [], "total": 0})
         payload = json.loads(request.read())
         if request.method == "POST":
@@ -119,6 +123,7 @@ def test_dashboard_client_manages_users() -> None:
         company_id=company_id,
         is_active=False,
     )["id"] == str(user_id)
+    assert client.user_audit_events(user_id, "user_updated") == []
 
 
 def test_dashboard_formatters() -> None:

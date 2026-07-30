@@ -34,7 +34,9 @@ col1.metric("Usuários", len(users))
 col2.metric("Ativos", active_count)
 col3.metric("Inativos", len(users) - active_count)
 
-create_tab, manage_tab = st.tabs(["Novo usuário", "Gerenciar acessos"])
+create_tab, manage_tab, audit_tab = st.tabs(
+    ["Novo usuário", "Gerenciar acessos", "Histórico de auditoria"]
+)
 
 with create_tab:
     with st.form("create_user"):
@@ -105,6 +107,66 @@ with manage_tab:
             else:
                 st.success("Acesso atualizado com sucesso.")
                 st.rerun()
+
+with audit_tab:
+    audit_user_options = {"Todos os usuários": None, **user_lookup} if users else {}
+    if not audit_user_options:
+        st.info("Nenhum evento de auditoria disponível.")
+    else:
+        audit_user_label = st.selectbox("Usuário afetado", list(audit_user_options))
+        action_labels = {
+            "Todas as ações": None,
+            "Usuário criado": "user_created",
+            "Usuário atualizado": "user_updated",
+        }
+        audit_action_label = st.selectbox("Ação", list(action_labels))
+        audit_target = audit_user_options[audit_user_label]
+        try:
+            events = client.user_audit_events(
+                audit_target["id"] if audit_target else None,
+                action_labels[audit_action_label],
+            )
+        except DashboardAPIError as exc:
+            st.error(str(exc))
+        else:
+            if not events:
+                st.info("Nenhum evento encontrado para os filtros selecionados.")
+            else:
+                user_name_by_id = {user["id"]: user["name"] for user in users}
+                audit_frame = pd.DataFrame(events)
+                audit_frame["actor_user_id"] = (
+                    audit_frame["actor_user_id"].map(user_name_by_id).fillna("Sistema")
+                )
+                audit_frame["target_user_id"] = (
+                    audit_frame["target_user_id"].map(user_name_by_id).fillna("Usuário removido")
+                )
+                audit_frame["action"] = audit_frame["action"].map(
+                    {"user_created": "Criação", "user_updated": "Atualização"}
+                )
+                audit_frame["changes"] = audit_frame["changes"].map(
+                    lambda changes: ", ".join(changes)
+                )
+                st.dataframe(
+                    audit_frame[
+                        [
+                            "created_at",
+                            "actor_user_id",
+                            "target_user_id",
+                            "action",
+                            "changes",
+                        ]
+                    ].rename(
+                        columns={
+                            "created_at": "Data/hora",
+                            "actor_user_id": "Responsável",
+                            "target_user_id": "Usuário afetado",
+                            "action": "Ação",
+                            "changes": "Campos alterados",
+                        }
+                    ),
+                    hide_index=True,
+                    width="stretch",
+                )
 
 if users:
     frame = pd.DataFrame(users)

@@ -114,6 +114,18 @@ class FinAnalyticsClient:
             ),
         )
 
+    def user_audit_events(
+        self,
+        target_user_id: uuid.UUID | str | None = None,
+        action: str | None = None,
+    ) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"page": 1, "page_size": 100}
+        if target_user_id:
+            params["target_user_id"] = str(target_user_id)
+        if action:
+            params["action"] = action
+        return self._paged_items("/auth/audit-events", **params)
+
     def category_options(self, company_id: uuid.UUID | str) -> list[dict[str, Any]]:
         return self._paged_items("/categories", company_id=company_id, page=1, page_size=100)
 

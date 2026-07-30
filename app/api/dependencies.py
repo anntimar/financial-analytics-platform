@@ -14,6 +14,7 @@ from app.repositories.cost_center_repository import CostCenterRepository
 from app.repositories.import_repository import ImportRepository
 from app.repositories.subcategory_repository import SubcategoryRepository
 from app.repositories.transaction_repository import TransactionRepository
+from app.repositories.user_audit_repository import UserAuditRepository
 from app.repositories.user_repository import UserRepository
 from app.services.account_service import AccountService
 from app.services.alert_service import AlertService
@@ -44,7 +45,11 @@ def get_alert_service(session: DatabaseSession) -> AlertService:
 
 
 def get_auth_service(session: DatabaseSession) -> AuthService:
-    return AuthService(UserRepository(session), CompanyRepository(session))
+    return AuthService(
+        UserRepository(session),
+        CompanyRepository(session),
+        UserAuditRepository(session),
+    )
 
 
 def get_budget_service(session: DatabaseSession) -> BudgetService:

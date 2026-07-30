@@ -21,7 +21,7 @@ from app.services.auth_service import AuthService
 
 def _service() -> tuple[AuthService, Mock]:
     repository = Mock()
-    return AuthService(repository, Mock()), repository
+    return AuthService(repository, Mock(), Mock()), repository
 
 
 def test_password_hash_is_salted_and_verifiable() -> None:
@@ -254,6 +254,7 @@ def test_promoting_user_to_admin_removes_company() -> None:
     user_id = uuid.uuid4()
     repository.get.return_value = SimpleNamespace(
         id=user_id,
+        name="Gestor",
         company_id=uuid.uuid4(),
         role="manager",
         is_active=True,
@@ -267,3 +268,68 @@ def test_promoting_user_to_admin_removes_company() -> None:
     )
 
     assert repository.update.call_args.args[1].company_id is None
+
+
+def test_user_creation_records_audit_without_password() -> None:
+    service, repository = _service()
+    actor_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    repository.get_by_email.return_value = None
+
+    def create(user: User) -> User:
+        user.id = user_id
+        return user
+
+    repository.create.side_effect = create
+    service.create_user(
+        UserCreate(
+            name="Administrador",
+            email="audit@example.com",
+            password="safe-password",
+            role=UserRole.ADMIN,
+        ),
+        actor_id=actor_id,
+    )
+
+    audit_call = service.audit_repository.create.call_args
+    assert audit_call.args[:3] == (actor_id, user_id, "user_created")
+    assert "password" not in audit_call.args[3]
+
+
+def test_user_update_records_only_changed_fields() -> None:
+    service, repository = _service()
+    user_id = uuid.uuid4()
+    user = User(
+        id=user_id,
+        name="Gestor",
+        email="manager@example.com",
+        password_hash="hash",
+        role="manager",
+        company_id=uuid.uuid4(),
+        is_active=True,
+    )
+    repository.get.return_value = user
+
+    def update(record: User, data: UserUpdate) -> User:
+        record.name = data.name or record.name
+        return record
+
+    repository.update.side_effect = update
+    service.update_user(
+        user_id,
+        UserUpdate(name="Gestor Financeiro"),
+        actor_id=uuid.uuid4(),
+    )
+
+    changes = service.audit_repository.create.call_args.args[3]
+    assert changes == {"name": {"from": "Gestor", "to": "Gestor Financeiro"}}
+
+
+def test_admin_lists_audit_events() -> None:
+    service, _repository = _service()
+    service.audit_repository.list.return_value = ([], 0)
+
+    result = service.list_audit_events(1, 20, None, "user_updated")
+
+    assert result.total == 0
+    service.audit_repository.list.assert_called_once_with(1, 20, None, "user_updated")

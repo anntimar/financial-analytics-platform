@@ -142,3 +142,8 @@ def test_admin_lists_and_updates_users(client: TestClient) -> None:
     assert response.status_code == 200
     assert response.json()["id"] == str(user_id)
     service.update_user.assert_called_once()
+
+    service.list_audit_events.return_value = Page(items=[], total=0, page=1, page_size=20)
+    response = client.get("/api/v1/auth/audit-events?action=user_updated")
+    assert response.status_code == 200
+    assert response.json()["total"] == 0

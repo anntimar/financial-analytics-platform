@@ -1,5 +1,7 @@
 import uuid
+from datetime import datetime
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -39,6 +41,17 @@ class UserResponse(BaseModel):
     email: str
     role: UserRole
     is_active: bool
+
+
+class UserAuditEventResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    actor_user_id: uuid.UUID | None
+    target_user_id: uuid.UUID
+    action: str
+    changes: dict[str, Any]
+    created_at: datetime
 
 
 class TokenResponse(BaseModel):

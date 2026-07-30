@@ -10,6 +10,7 @@ from app.models.raw_imported_transaction import RawImportedTransaction
 from app.models.subcategory import Subcategory
 from app.models.transaction import Transaction
 from app.models.user import User
+from app.models.user_audit_event import UserAuditEvent
 
 __all__ = [
     "Account",
@@ -24,4 +25,5 @@ __all__ = [
     "Subcategory",
     "Transaction",
     "User",
+    "UserAuditEvent",
 ]
