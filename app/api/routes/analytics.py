@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from app.api.dependencies import get_analytics_service
+from app.core.security import CurrentUser, ensure_company_access
 from app.schemas.analytics import (
     CashFlowPoint,
     CategorySummary,
@@ -26,7 +27,9 @@ def executive_summary(
     start_date: DateQuery,
     end_date: DateQuery,
     service: Service,
+    user: CurrentUser,
 ) -> ExecutiveSummary:
+    ensure_company_access(user, company_id)
     return service.executive_summary(company_id, start_date, end_date)
 
 
@@ -36,7 +39,9 @@ def monthly_summary(
     start_date: DateQuery,
     end_date: DateQuery,
     service: Service,
+    user: CurrentUser,
 ) -> list[MonthlyFinancialSummary]:
+    ensure_company_access(user, company_id)
     return service.monthly_summary(company_id, start_date, end_date)
 
 
@@ -46,8 +51,10 @@ def category_summary(
     start_date: DateQuery,
     end_date: DateQuery,
     service: Service,
+    user: CurrentUser,
     transaction_type: TransactionType = TransactionType.EXPENSE,
 ) -> list[CategorySummary]:
+    ensure_company_access(user, company_id)
     return service.category_summary(company_id, start_date, end_date, transaction_type)
 
 
@@ -57,7 +64,9 @@ def cash_flow(
     start_date: DateQuery,
     end_date: DateQuery,
     service: Service,
+    user: CurrentUser,
 ) -> list[CashFlowPoint]:
+    ensure_company_access(user, company_id)
     return service.cash_flow(company_id, start_date, end_date)
 
 
@@ -67,5 +76,7 @@ def overdue_summary(
     start_date: DateQuery,
     end_date: DateQuery,
     service: Service,
+    user: CurrentUser,
 ) -> OverdueSummary:
+    ensure_company_access(user, company_id)
     return service.overdue_summary(company_id, start_date, end_date)

@@ -8,6 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 from app.core.exceptions import AppError, ConflictError
 from app.core.security import (
     create_access_token,
+    ensure_company_access,
     get_current_user,
     hash_password,
     require_roles,
@@ -93,6 +94,26 @@ def test_role_dependency_enforces_allowed_roles() -> None:
     assert error.value.status_code == 403
     analyst = SimpleNamespace(role="analyst")
     assert dependency(analyst) is analyst
+
+
+def test_company_access_allows_admin_and_own_company() -> None:
+    company_id = uuid.uuid4()
+    ensure_company_access(SimpleNamespace(role="admin", company_id=None), company_id)
+    ensure_company_access(
+        SimpleNamespace(role="manager", company_id=company_id),
+        company_id,
+    )
+
+
+def test_company_access_rejects_cross_tenant_and_unassigned_user() -> None:
+    company_id = uuid.uuid4()
+    for assigned_company in (uuid.uuid4(), None):
+        with pytest.raises(AppError) as error:
+            ensure_company_access(
+                SimpleNamespace(role="analyst", company_id=assigned_company),
+                company_id,
+            )
+        assert error.value.status_code == 403
 
 
 def test_access_token_resolves_active_user() -> None:

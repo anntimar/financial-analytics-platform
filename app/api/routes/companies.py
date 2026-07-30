@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.api.dependencies import get_company_service
-from app.core.security import require_roles
+from app.core.security import CurrentUser, ensure_company_access, require_roles
 from app.schemas.auth import UserRole
 from app.schemas.common import Page
 from app.schemas.company import CompanyCreate, CompanyResponse, CompanyUpdate
@@ -23,15 +23,29 @@ def create_company(data: CompanyCreate, service: Service, _admin: Admin) -> Comp
 @router.get("", response_model=Page[CompanyResponse])
 def list_companies(
     service: Service,
+    user: CurrentUser,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     active_only: bool = True,
 ) -> Page[CompanyResponse]:
+    if user.role != UserRole.ADMIN.value:
+        if user.company_id is None:
+            return Page[CompanyResponse](items=[], total=0, page=page, page_size=page_size)
+        company = service.get(user.company_id)
+        if active_only and not company.is_active:
+            return Page[CompanyResponse](items=[], total=0, page=page, page_size=page_size)
+        return Page[CompanyResponse](
+            items=[CompanyResponse.model_validate(company)],
+            total=1,
+            page=page,
+            page_size=page_size,
+        )
     return service.list(page, page_size, active_only)
 
 
 @router.get("/{company_id}", response_model=CompanyResponse)
-def get_company(company_id: uuid.UUID, service: Service) -> CompanyResponse:
+def get_company(company_id: uuid.UUID, service: Service, user: CurrentUser) -> CompanyResponse:
+    ensure_company_access(user, company_id)
     return CompanyResponse.model_validate(service.get(company_id))
 
 

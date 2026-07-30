@@ -70,3 +70,10 @@ def require_roles(*roles: UserRole) -> Callable[[CurrentUser], User]:
         return user
 
     return dependency
+
+
+def ensure_company_access(user: User, company_id: uuid.UUID) -> None:
+    if user.role == UserRole.ADMIN.value:
+        return
+    if user.company_id is None or user.company_id != company_id:
+        raise AppError("Acesso negado aos dados desta empresa.", status_code=403)
