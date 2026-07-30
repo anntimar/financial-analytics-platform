@@ -1,9 +1,13 @@
 import os
+import uuid
+from datetime import date
 
 import pytest
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.core.database import engine
+from app.repositories.analytics_repository import AnalyticsRepository
 
 pytestmark = [
     pytest.mark.integration,
@@ -40,10 +44,19 @@ def test_database_migrations_and_analytics_views() -> None:
             )
         )
 
-    assert revision == "20260727_0004"
+    assert revision == "20260727_0005"
     assert schemas == {"raw", "core", "analytics"}
     assert views == {
         "monthly_financial_summary",
         "category_financial_summary",
         "overdue_summary",
     }
+
+
+def test_budget_comparison_query_executes_on_postgresql() -> None:
+    with Session(engine) as session:
+        result = AnalyticsRepository(session).budget_comparison(
+            uuid.uuid4(), date(2026, 1, 1), date(2026, 12, 31)
+        )
+
+    assert result == []

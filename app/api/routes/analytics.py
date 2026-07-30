@@ -13,6 +13,7 @@ from app.schemas.analytics import (
     MonthlyFinancialSummary,
     OverdueSummary,
 )
+from app.schemas.budget import BudgetComparison
 from app.schemas.category import TransactionType
 from app.services.analytics_service import AnalyticsService
 
@@ -80,3 +81,15 @@ def overdue_summary(
 ) -> OverdueSummary:
     ensure_company_access(user, company_id)
     return service.overdue_summary(company_id, start_date, end_date)
+
+
+@router.get("/budget-comparison", response_model=list[BudgetComparison])
+def budget_comparison(
+    company_id: uuid.UUID,
+    start_date: DateQuery,
+    end_date: DateQuery,
+    service: Service,
+    user: CurrentUser,
+) -> list[BudgetComparison]:
+    ensure_company_access(user, company_id)
+    return service.budget_comparison(company_id, start_date, end_date)

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.repositories.analytics_repository import AnalyticsRepository
+from app.repositories.budget_repository import BudgetRepository
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.company_repository import CompanyRepository
 from app.repositories.import_repository import ImportRepository
@@ -12,6 +13,7 @@ from app.repositories.transaction_repository import TransactionRepository
 from app.repositories.user_repository import UserRepository
 from app.services.analytics_service import AnalyticsService
 from app.services.auth_service import AuthService
+from app.services.budget_service import BudgetService
 from app.services.category_service import CategoryService
 from app.services.company_service import CompanyService
 from app.services.import_service import ImportService
@@ -23,6 +25,14 @@ DatabaseSession = Annotated[Session, Depends(get_db)]
 
 def get_auth_service(session: DatabaseSession) -> AuthService:
     return AuthService(UserRepository(session), CompanyRepository(session))
+
+
+def get_budget_service(session: DatabaseSession) -> BudgetService:
+    return BudgetService(
+        BudgetRepository(session),
+        CompanyRepository(session),
+        CategoryRepository(session),
+    )
 
 
 def get_analytics_service(session: DatabaseSession) -> AnalyticsService:
