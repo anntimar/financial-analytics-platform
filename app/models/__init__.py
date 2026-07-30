@@ -1,4 +1,5 @@
 from app.models.account import Account
+from app.models.alert_action import AlertAction
 from app.models.budget import Budget
 from app.models.category import Category
 from app.models.company import Company
@@ -10,6 +11,7 @@ from app.models.user import User
 
 __all__ = [
     "Account",
+    "AlertAction",
     "Budget",
     "Category",
     "Company",

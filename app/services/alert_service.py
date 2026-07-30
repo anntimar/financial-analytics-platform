@@ -4,8 +4,11 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
+from app.core.exceptions import AppError, NotFoundError
+from app.models.alert_action import AlertAction
+from app.repositories.alert_action_repository import AlertActionRepository
 from app.schemas.account import AccountBalance
-from app.schemas.alert import AlertSeverity, FinancialAlert
+from app.schemas.alert import AlertActionUpdate, AlertSeverity, FinancialAlert
 from app.schemas.budget import BudgetComparison
 from app.schemas.category import TransactionType
 from app.services.analytics_service import AnalyticsService
@@ -17,8 +20,13 @@ BUDGET_CRITICAL = Decimal("20")
 
 
 class AlertService:
-    def __init__(self, analytics: AnalyticsService) -> None:
+    def __init__(
+        self,
+        analytics: AnalyticsService,
+        action_repository: AlertActionRepository | None = None,
+    ) -> None:
         self.analytics = analytics
+        self.action_repository = action_repository
 
     def list_alerts(
         self, company_id: uuid.UUID, start_date: date, end_date: date
@@ -36,6 +44,7 @@ class AlertService:
                 end_date,
             )
         )
+        alerts = self._apply_workflow(alerts, company_id, start_date, end_date)
         return sorted(
             alerts,
             key=lambda alert: (
@@ -47,6 +56,58 @@ class AlertService:
                 alert.code,
             ),
         )
+
+    def update_action(self, data: AlertActionUpdate, user_id: uuid.UUID) -> AlertAction:
+        if data.period_start > data.period_end:
+            raise AppError("period_start não pode ser posterior a period_end.")
+        if self.action_repository is None:
+            raise AppError("Fluxo operacional de alertas indisponível.", status_code=503)
+        active_alert = next(
+            (
+                alert
+                for alert in self.list_alerts(data.company_id, data.period_start, data.period_end)
+                if alert.code == data.alert_code and alert.reference_date == data.reference_date
+            ),
+            None,
+        )
+        if active_alert is None:
+            raise NotFoundError("Alerta ativo")
+        current = self.action_repository.get(data.company_id, data.alert_code, data.reference_date)
+        return self.action_repository.save(
+            current,
+            data.company_id,
+            data.alert_code,
+            data.reference_date,
+            data.status,
+            data.note,
+            user_id,
+        )
+
+    def _apply_workflow(
+        self,
+        alerts: list[FinancialAlert],
+        company_id: uuid.UUID,
+        start_date: date,
+        end_date: date,
+    ) -> list[FinancialAlert]:
+        if self.action_repository is None:
+            return alerts
+        actions = {
+            (action.alert_code, action.reference_date): action
+            for action in self.action_repository.list_for_period(company_id, start_date, end_date)
+        }
+        return [
+            alert.model_copy(
+                update={
+                    "workflow_status": action.status,
+                    "workflow_note": action.note,
+                    "workflow_updated_at": action.updated_at,
+                }
+            )
+            if (action := actions.get((alert.code, alert.reference_date)))
+            else alert
+            for alert in alerts
+        ]
 
     @staticmethod
     def _result_alert(net_result: Decimal, reference_date: date) -> list[FinancialAlert]:
