@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.account import Account
 from app.models.budget import Budget
 from app.models.category import Category
+from app.models.cost_center import CostCenter
 from app.models.transaction import Transaction
 from app.schemas.category import TransactionType
 
@@ -186,6 +187,28 @@ class AnalyticsRepository:
             )
             .group_by(reference_month)
             .order_by(reference_month)
+        )
+        return [dict(row) for row in self.session.execute(statement).mappings()]
+
+    def cost_center_summary(
+        self, company_id: uuid.UUID, start_date: date, end_date: date
+    ) -> list[dict[str, Any]]:
+        statement = (
+            select(
+                CostCenter.id.label("cost_center_id"),
+                CostCenter.name.label("cost_center_name"),
+                CostCenter.code.label("cost_center_code"),
+                func.sum(Transaction.amount).label("total_amount"),
+                func.count(Transaction.id).label("transaction_count"),
+            )
+            .join(CostCenter, CostCenter.id == Transaction.cost_center_id)
+            .where(
+                *self._base_filters(company_id, start_date, end_date),
+                Transaction.transaction_type == "expense",
+                Transaction.status == "paid",
+            )
+            .group_by(CostCenter.id, CostCenter.name, CostCenter.code)
+            .order_by(func.sum(Transaction.amount).desc())
         )
         return [dict(row) for row in self.session.execute(statement).mappings()]
 

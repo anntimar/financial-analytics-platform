@@ -175,3 +175,12 @@ def test_dashboard_client_requests_account_balances() -> None:
 
     client = FinAnalyticsClient("http://test", transport=httpx.MockTransport(handler))
     assert client.account_balances(uuid.uuid4(), date(2026, 1, 1), date(2026, 12, 31)) == []
+
+
+def test_dashboard_client_requests_cost_center_analytics() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/analytics/cost-centers"
+        return httpx.Response(200, json=[])
+
+    client = FinAnalyticsClient("http://test", transport=httpx.MockTransport(handler))
+    assert client.cost_centers(uuid.uuid4(), date(2026, 1, 1), date(2026, 12, 31)) == []

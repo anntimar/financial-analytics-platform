@@ -15,6 +15,7 @@ from app.schemas.alert import AlertSeverity, AlertWorkflowStatus, FinancialAlert
 from app.schemas.analytics import (
     CashFlowPoint,
     CategorySummary,
+    CostCenterSummary,
     ExecutiveSummary,
     MonthlyFinancialSummary,
     OverdueSummary,
@@ -63,6 +64,16 @@ def report_data(company_id: uuid.UUID) -> ExecutiveReport:
                 category_id=category_id,
                 category_name="Pessoal",
                 transaction_type="expense",
+                total_amount=Decimal("600"),
+                transaction_count=2,
+                share_percentage=Decimal("100"),
+            )
+        ],
+        cost_centers=[
+            CostCenterSummary(
+                cost_center_id=uuid.uuid4(),
+                cost_center_name="Marketing",
+                cost_center_code="MKT",
                 total_amount=Decimal("600"),
                 transaction_count=2,
                 share_percentage=Decimal("100"),
@@ -128,6 +139,7 @@ def test_report_service_consolidates_sections_and_exports_csv() -> None:
     analytics.executive_summary.return_value = expected.summary
     analytics.monthly_summary.return_value = expected.monthly
     analytics.category_summary.return_value = expected.expense_categories
+    analytics.cost_center_summary.return_value = expected.cost_centers
     analytics.cash_flow.return_value = expected.cash_flow
     analytics.overdue_summary.return_value = expected.overdue
     analytics.budget_comparison.return_value = expected.budget_comparison
@@ -144,6 +156,7 @@ def test_report_service_consolidates_sections_and_exports_csv() -> None:
     assert report.company_name == "Empresa Demo"
     assert "summary,net_result" in csv_content
     assert "expense_categories,total_amount" in csv_content
+    assert "cost_centers,total_amount" in csv_content
     assert "cash_flow,accumulated_cash_flow" in csv_content
     assert "budget_comparison,variance_amount" in csv_content
     assert "account_balances,current_balance" in csv_content

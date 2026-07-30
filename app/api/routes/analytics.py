@@ -10,6 +10,7 @@ from app.schemas.account import AccountBalance
 from app.schemas.analytics import (
     CashFlowPoint,
     CategorySummary,
+    CostCenterSummary,
     ExecutiveSummary,
     MonthlyFinancialSummary,
     OverdueSummary,
@@ -70,6 +71,18 @@ def cash_flow(
 ) -> list[CashFlowPoint]:
     ensure_company_access(user, company_id)
     return service.cash_flow(company_id, start_date, end_date)
+
+
+@router.get("/cost-centers", response_model=list[CostCenterSummary])
+def cost_center_summary(
+    company_id: uuid.UUID,
+    start_date: DateQuery,
+    end_date: DateQuery,
+    service: Service,
+    user: CurrentUser,
+) -> list[CostCenterSummary]:
+    ensure_company_access(user, company_id)
+    return service.cost_center_summary(company_id, start_date, end_date)
 
 
 @router.get("/overdue", response_model=OverdueSummary)

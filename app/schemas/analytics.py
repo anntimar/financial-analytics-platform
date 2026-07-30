@@ -35,6 +35,15 @@ class CategorySummary(BaseModel):
     share_percentage: Decimal
 
 
+class CostCenterSummary(BaseModel):
+    cost_center_id: uuid.UUID
+    cost_center_name: str
+    cost_center_code: str | None
+    total_amount: Decimal
+    transaction_count: int = Field(ge=0)
+    share_percentage: Decimal
+
+
 class CashFlowPoint(BaseModel):
     reference_month: date
     inflows: Decimal
