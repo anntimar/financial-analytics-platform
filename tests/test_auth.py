@@ -15,7 +15,7 @@ from app.core.security import (
     verify_password,
 )
 from app.models.user import User
-from app.schemas.auth import LoginRequest, UserCreate, UserRole
+from app.schemas.auth import LoginRequest, UserCreate, UserRole, UserUpdate
 from app.services.auth_service import AuthService
 
 
@@ -182,3 +182,88 @@ def test_auth_service_creates_company_user_and_logs_in() -> None:
     token = service.login(LoginRequest(email=analyst.email, password="safe-password"))
     assert token.user.role == UserRole.ANALYST
     assert token.access_token
+
+
+def test_admin_lists_users_with_company_filter() -> None:
+    service, repository = _service()
+    company_id = uuid.uuid4()
+    service.company_repository.get.return_value = SimpleNamespace(id=company_id)
+    repository.list.return_value = ([], 0)
+
+    result = service.list_users(2, 10, company_id, active_only=True)
+
+    assert result.page == 2
+    assert result.total == 0
+    repository.list.assert_called_once_with(2, 10, company_id, True)
+
+
+def test_user_update_changes_role_company_and_status() -> None:
+    service, repository = _service()
+    user_id = uuid.uuid4()
+    company_id = uuid.uuid4()
+    user = SimpleNamespace(
+        id=user_id,
+        company_id=None,
+        name="Admin antigo",
+        role="admin",
+        is_active=True,
+    )
+    repository.get.return_value = user
+    repository.update.side_effect = lambda record, data: record
+    service.company_repository.get.return_value = SimpleNamespace(id=company_id)
+
+    result = service.update_user(
+        user_id,
+        UserUpdate(
+            name="Gestor novo",
+            role=UserRole.MANAGER,
+            company_id=company_id,
+            is_active=False,
+        ),
+        actor_id=uuid.uuid4(),
+    )
+
+    assert result is user
+    update = repository.update.call_args.args[1]
+    assert update.role == UserRole.MANAGER
+    assert update.company_id == company_id
+
+
+def test_user_update_rejects_self_deactivation_and_missing_company() -> None:
+    service, repository = _service()
+    user_id = uuid.uuid4()
+    repository.get.return_value = SimpleNamespace(
+        id=user_id,
+        company_id=None,
+        role="admin",
+        is_active=True,
+    )
+
+    with pytest.raises(AppError, match="próprio acesso"):
+        service.update_user(user_id, UserUpdate(is_active=False), actor_id=user_id)
+    with pytest.raises(AppError, match="vinculados"):
+        service.update_user(
+            user_id,
+            UserUpdate(role=UserRole.ANALYST),
+            actor_id=uuid.uuid4(),
+        )
+
+
+def test_promoting_user_to_admin_removes_company() -> None:
+    service, repository = _service()
+    user_id = uuid.uuid4()
+    repository.get.return_value = SimpleNamespace(
+        id=user_id,
+        company_id=uuid.uuid4(),
+        role="manager",
+        is_active=True,
+    )
+    repository.update.side_effect = lambda user, data: user
+
+    service.update_user(
+        user_id,
+        UserUpdate(role=UserRole.ADMIN),
+        actor_id=uuid.uuid4(),
+    )
+
+    assert repository.update.call_args.args[1].company_id is None

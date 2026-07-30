@@ -85,6 +85,42 @@ def test_dashboard_client_lists_transaction_filters_and_options() -> None:
     assert result["total"] == 0
 
 
+def test_dashboard_client_manages_users() -> None:
+    user_id = uuid.uuid4()
+    company_id = uuid.uuid4()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            assert request.url.path == "/auth/users"
+            assert request.url.params["company_id"] == str(company_id)
+            return httpx.Response(200, json={"items": [], "total": 0})
+        payload = json.loads(request.read())
+        if request.method == "POST":
+            assert request.url.path == "/auth/users"
+            assert payload["role"] == "analyst"
+        else:
+            assert request.url.path == f"/auth/users/{user_id}"
+            assert payload["is_active"] is False
+        return httpx.Response(200, json={"id": str(user_id)})
+
+    client = FinAnalyticsClient("http://test", transport=httpx.MockTransport(handler))
+    assert client.users(company_id, active_only=True) == []
+    assert client.create_user(
+        "Analista",
+        "analyst@example.com",
+        "safe-password",
+        "analyst",
+        company_id,
+    )["id"] == str(user_id)
+    assert client.update_user(
+        user_id,
+        name="Analista",
+        role="analyst",
+        company_id=company_id,
+        is_active=False,
+    )["id"] == str(user_id)
+
+
 def test_dashboard_formatters() -> None:
     assert format_currency("1250.9") == "R$ 1.250,90"
     assert format_percentage("12.5") == "12,50%"

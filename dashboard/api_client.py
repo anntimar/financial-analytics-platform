@@ -58,6 +58,62 @@ class FinAnalyticsClient:
         )
         return cast(list[dict[str, Any]], response["items"])
 
+    def users(
+        self,
+        company_id: uuid.UUID | str | None = None,
+        active_only: bool = False,
+    ) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"page": 1, "page_size": 100, "active_only": active_only}
+        if company_id:
+            params["company_id"] = str(company_id)
+        return self._paged_items("/auth/users", **params)
+
+    def create_user(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        role: str,
+        company_id: uuid.UUID | str | None,
+    ) -> dict[str, Any]:
+        return cast(
+            dict[str, Any],
+            self._request(
+                "POST",
+                "/auth/users",
+                json={
+                    "name": name,
+                    "email": email,
+                    "password": password,
+                    "role": role,
+                    "company_id": str(company_id) if company_id else None,
+                },
+            ),
+        )
+
+    def update_user(
+        self,
+        user_id: uuid.UUID | str,
+        *,
+        name: str,
+        role: str,
+        company_id: uuid.UUID | str | None,
+        is_active: bool,
+    ) -> dict[str, Any]:
+        return cast(
+            dict[str, Any],
+            self._request(
+                "PATCH",
+                f"/auth/users/{user_id}",
+                json={
+                    "name": name,
+                    "role": role,
+                    "company_id": str(company_id) if company_id else None,
+                    "is_active": is_active,
+                },
+            ),
+        )
+
     def category_options(self, company_id: uuid.UUID | str) -> list[dict[str, Any]]:
         return self._paged_items("/categories", company_id=company_id, page=1, page_size=100)
 
