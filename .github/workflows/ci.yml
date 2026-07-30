@@ -58,6 +58,11 @@ jobs:
       - name: Check formatting
         run: uv run --frozen ruff format --check .
 
+      - name: Validate Dockerfiles
+        run: |
+          docker build --check -f Dockerfile.api .
+          docker build --check -f Dockerfile.dashboard .
+
       - name: Type check
         run: uv run --frozen mypy app dashboard scripts
 
@@ -66,4 +71,3 @@ jobs:
 
       - name: Run tests
         run: uv run --frozen pytest
-

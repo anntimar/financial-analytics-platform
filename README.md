@@ -47,6 +47,11 @@ cp .env.example .env
 docker compose up --build
 ```
 
+As dependências de runtime ficam em `requirements.runtime.txt`, copiadas antes do
+código nos Dockerfiles. Com isso, alterações comuns na API, dashboard ou
+documentação reutilizam a camada de dependências e tornam os próximos builds
+substancialmente mais rápidos.
+
 Depois de iniciado:
 
 - API: <http://localhost:8000>
