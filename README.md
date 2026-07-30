@@ -1,27 +1,25 @@
 # FinAnalytics
 
 Plataforma de analytics financeiro que transforma dados de receitas e despesas em
-indicadores gerenciais. O projeto é um produto de portfólio com dados sintéticos e
-arquitetura ponta a ponta: ingestão, PostgreSQL, API e, nas próximas etapas, dashboard.
+indicadores gerenciais. O projeto é um produto de portfólio completo, baseado
+exclusivamente em dados sintéticos, com ingestão, PostgreSQL, API, dashboard,
+previsões, segurança e observabilidade.
 
 ## Estado atual
 
-As duas primeiras entregas estabelecem a fundação e a API operacional:
+Versão **1.0.0** pronta para demonstração:
 
-- API FastAPI com endpoint de saúde;
-- CRUD de empresas, categorias e transações;
-- filtros financeiros e paginação com limite de 100 registros;
-- validações de vínculo entre empresa, categoria e tipo de transação;
-- respostas de erro padronizadas para recursos ausentes e conflitos;
-- pipeline CSV com camada bruta, validação por linha e deduplicação;
-- histórico de lotes e relatório consultável de problemas de qualidade;
-- KPIs financeiros, série mensal, categorias, fluxo de caixa e inadimplência;
-- configuração por variáveis de ambiente;
-- PostgreSQL 16 em Docker Compose;
-- modelos SQLAlchemy de empresas, categorias e transações;
-- migração inicial com schemas `raw`, `core` e `analytics`;
-- transformadores reutilizáveis de texto e valores monetários;
-- testes automatizados, Ruff e MyPy.
+- pipeline CSV rastreável com camada bruta, validação, deduplicação e relatório de erros;
+- PostgreSQL em schemas `raw`, `core` e `analytics`, versionado por dez migrações Alembic;
+- API FastAPI com empresas, contas, categorias, subcategorias, centros de custo,
+  transações, orçamentos, relatórios e exportações;
+- dashboard Streamlit com visão executiva, importações, previsões, orçamento,
+  saldos, alertas, centros de custo, lançamentos e gestão de acessos;
+- KPIs, fluxo de caixa, inadimplência, planejado versus realizado e relatórios executivos;
+- previsão de receitas, detecção de anomalias e alertas financeiros acionáveis;
+- autenticação JWT, RBAC, isolamento por empresa e trilha de auditoria;
+- health checks, métricas Prometheus, logs estruturados, Docker e GitHub Actions;
+- 151 testes automatizados e cobertura total superior a 95%.
 
 ## Arquitetura
 
@@ -35,7 +33,7 @@ Pipeline Python  -->  raw  -->  core  -->  analytics
                                       API FastAPI
                                            |
                                            v
-                                  Dashboard (próxima fase)
+                                  Dashboard Streamlit
 ```
 
 ## Execução com Docker

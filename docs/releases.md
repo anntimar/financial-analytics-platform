@@ -1,5 +1,11 @@
 # Processo de release
 
+## Versão atual
+
+`v1.0.0` é a primeira versão estável do FinAnalytics. Ela consolida o pipeline
+de dados, a API, o dashboard, analytics, previsões, alertas, autenticação,
+isolamento por empresa, auditoria, observabilidade e execução por Docker.
+
 1. Confirme que a branch `master` está estável.
 2. Revise mudanças desde a última versão.
 3. Execute testes, Ruff e MyPy.
