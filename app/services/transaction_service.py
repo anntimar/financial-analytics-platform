@@ -8,6 +8,7 @@ from app.models.transaction import Transaction
 from app.repositories.account_repository import AccountRepository
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.company_repository import CompanyRepository
+from app.repositories.subcategory_repository import SubcategoryRepository
 from app.repositories.transaction_repository import TransactionRepository
 from app.schemas.category import TransactionType
 from app.schemas.common import Page
@@ -26,11 +27,28 @@ class TransactionService:
         company_repository: CompanyRepository,
         category_repository: CategoryRepository,
         account_repository: AccountRepository | None = None,
+        subcategory_repository: SubcategoryRepository | None = None,
     ) -> None:
         self.repository = repository
         self.company_repository = company_repository
         self.category_repository = category_repository
         self.account_repository = account_repository
+        self.subcategory_repository = subcategory_repository
+
+    def _validate_subcategory(
+        self,
+        subcategory_id: uuid.UUID,
+        category_id: uuid.UUID,
+    ) -> None:
+        subcategory = (
+            self.subcategory_repository.get(subcategory_id) if self.subcategory_repository else None
+        )
+        if subcategory is None:
+            raise NotFoundError("Subcategoria")
+        if subcategory.category_id != category_id:
+            raise AppError("A subcategoria não pertence à categoria informada.")
+        if not subcategory.is_active:
+            raise AppError("A subcategoria informada está inativa.")
 
     def _validate_account(self, account_id: uuid.UUID, company_id: uuid.UUID) -> None:
         account = self.account_repository.get(account_id) if self.account_repository else None
@@ -60,6 +78,8 @@ class TransactionService:
         if self.company_repository.get(data.company_id) is None:
             raise NotFoundError("Empresa")
         self._validate_category(data.category_id, data.company_id, data.transaction_type)
+        if data.subcategory_id:
+            self._validate_subcategory(data.subcategory_id, data.category_id)
         if data.account_id:
             self._validate_account(data.account_id, data.company_id)
         return self.repository.create(data)
@@ -83,6 +103,7 @@ class TransactionService:
         minimum_amount: Decimal | None,
         maximum_amount: Decimal | None,
         account_id: uuid.UUID | None = None,
+        subcategory_id: uuid.UUID | None = None,
     ) -> Page[TransactionResponse]:
         if start_date and end_date and start_date > end_date:
             raise AppError("start_date não pode ser posterior a end_date.")
@@ -101,6 +122,7 @@ class TransactionService:
             transaction_type=transaction_type,
             category_id=category_id,
             account_id=account_id,
+            subcategory_id=subcategory_id,
             status=status,
             minimum_amount=minimum_amount,
             maximum_amount=maximum_amount,
@@ -119,6 +141,13 @@ class TransactionService:
                 transaction.company_id,
                 TransactionType(transaction.transaction_type),
             )
+        if "subcategory_id" in data.model_fields_set and data.subcategory_id:
+            effective_category_id = data.category_id or transaction.category_id
+            self._validate_subcategory(data.subcategory_id, effective_category_id)
+        else:
+            existing_subcategory_id = getattr(transaction, "subcategory_id", None)
+            if data.category_id and existing_subcategory_id:
+                self._validate_subcategory(existing_subcategory_id, data.category_id)
         if data.status == TransactionStatus.PAID:
             payment_date = data.payment_date or transaction.payment_date
             if payment_date is None:

@@ -43,6 +43,7 @@ def list_transactions(
     transaction_type: TransactionType | None = None,
     category_id: uuid.UUID | None = None,
     account_id: uuid.UUID | None = None,
+    subcategory_id: uuid.UUID | None = None,
     status_filter: Annotated[TransactionStatus | None, Query(alias="status")] = None,
     minimum_amount: Annotated[Decimal | None, Query(ge=0)] = None,
     maximum_amount: Annotated[Decimal | None, Query(ge=0)] = None,
@@ -60,6 +61,7 @@ def list_transactions(
         minimum_amount=minimum_amount,
         maximum_amount=maximum_amount,
         account_id=account_id,
+        subcategory_id=subcategory_id,
     )
 
 

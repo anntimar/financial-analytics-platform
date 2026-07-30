@@ -11,6 +11,7 @@ from app.repositories.budget_repository import BudgetRepository
 from app.repositories.category_repository import CategoryRepository
 from app.repositories.company_repository import CompanyRepository
 from app.repositories.import_repository import ImportRepository
+from app.repositories.subcategory_repository import SubcategoryRepository
 from app.repositories.transaction_repository import TransactionRepository
 from app.repositories.user_repository import UserRepository
 from app.services.account_service import AccountService
@@ -23,6 +24,7 @@ from app.services.company_service import CompanyService
 from app.services.import_service import ImportService
 from app.services.predictive_service import PredictiveService
 from app.services.report_service import ReportService
+from app.services.subcategory_service import SubcategoryService
 from app.services.transaction_service import TransactionService
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
@@ -82,12 +84,20 @@ def get_category_service(session: DatabaseSession) -> CategoryService:
     return CategoryService(CategoryRepository(session), CompanyRepository(session))
 
 
+def get_subcategory_service(session: DatabaseSession) -> SubcategoryService:
+    return SubcategoryService(
+        SubcategoryRepository(session),
+        CategoryRepository(session),
+    )
+
+
 def get_transaction_service(session: DatabaseSession) -> TransactionService:
     return TransactionService(
         TransactionRepository(session),
         CompanyRepository(session),
         CategoryRepository(session),
         AccountRepository(session),
+        SubcategoryRepository(session),
     )
 
 
@@ -96,4 +106,5 @@ def get_import_service(session: DatabaseSession) -> ImportService:
         ImportRepository(session),
         CompanyRepository(session),
         CategoryRepository(session),
+        SubcategoryRepository(session),
     )

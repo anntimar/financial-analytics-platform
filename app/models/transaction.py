@@ -31,6 +31,9 @@ class Transaction(Base):
     category_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("core.categories.id"), nullable=False, index=True
     )
+    subcategory_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("core.subcategories.id"), nullable=True, index=True
+    )
     transaction_type: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)

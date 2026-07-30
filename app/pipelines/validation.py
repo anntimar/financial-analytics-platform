@@ -33,6 +33,7 @@ class PreparedTransaction:
     source: str
     external_id: str | None
     transaction_hash: str
+    subcategory_id: uuid.UUID | None = None
 
 
 def _enum_value(
@@ -73,6 +74,20 @@ def prepare_transaction(
                 "invalid_category_id",
                 "category_id deve ser um UUID válido.",
                 row.get("category_id"),
+            )
+        )
+
+    raw_subcategory_id = row.get("subcategory_id", "").strip()
+    try:
+        subcategory_id = uuid.UUID(raw_subcategory_id) if raw_subcategory_id else None
+    except ValueError:
+        subcategory_id = None
+        issues.append(
+            ValidationIssueData(
+                "subcategory_id",
+                "invalid_subcategory_id",
+                "subcategory_id deve ser um UUID válido.",
+                raw_subcategory_id,
             )
         )
 
@@ -163,5 +178,6 @@ def prepare_transaction(
             transaction_type,
             external_id,
         ),
+        subcategory_id=subcategory_id,
     )
     return prepared, []

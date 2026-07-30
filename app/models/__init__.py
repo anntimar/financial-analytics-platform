@@ -6,6 +6,7 @@ from app.models.company import Company
 from app.models.data_quality_issue import DataQualityIssue
 from app.models.import_batch import ImportBatch
 from app.models.raw_imported_transaction import RawImportedTransaction
+from app.models.subcategory import Subcategory
 from app.models.transaction import Transaction
 from app.models.user import User
 
@@ -18,6 +19,7 @@ __all__ = [
     "DataQualityIssue",
     "ImportBatch",
     "RawImportedTransaction",
+    "Subcategory",
     "Transaction",
     "User",
 ]

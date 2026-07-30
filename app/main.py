@@ -17,6 +17,7 @@ from app.api.routes.imports import router as imports_router
 from app.api.routes.monitoring import router as monitoring_router
 from app.api.routes.predictive import router as predictive_router
 from app.api.routes.reports import router as reports_router
+from app.api.routes.subcategories import router as subcategories_router
 from app.api.routes.transactions import router as transactions_router
 from app.api.security_headers import SecurityHeadersMiddleware
 from app.core.config import settings
@@ -65,3 +66,4 @@ app.include_router(transactions_router, prefix="/api/v1", dependencies=authentic
 app.include_router(imports_router, prefix="/api/v1", dependencies=editor)
 app.include_router(predictive_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(reports_router, prefix="/api/v1", dependencies=authenticated)
+app.include_router(subcategories_router, prefix="/api/v1", dependencies=authenticated)
