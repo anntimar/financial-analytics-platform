@@ -6,6 +6,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from app.api.error_handlers import app_error_handler
 from app.api.middleware import RequestLoggingMiddleware
 from app.api.routes.accounts import router as accounts_router
+from app.api.routes.alerts import router as alerts_router
 from app.api.routes.analytics import router as analytics_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.budgets import router as budgets_router
@@ -55,6 +56,7 @@ authenticated = [Depends(get_current_user)]
 editor = [Depends(require_roles(UserRole.ADMIN, UserRole.ANALYST))]
 app.include_router(analytics_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(accounts_router, prefix="/api/v1", dependencies=authenticated)
+app.include_router(alerts_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(budgets_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(companies_router, prefix="/api/v1", dependencies=authenticated)
 app.include_router(categories_router, prefix="/api/v1", dependencies=authenticated)

@@ -124,6 +124,14 @@ class FinAnalyticsClient:
             self._analytics("/analytics/account-balances", company_id, start_date, end_date),
         )
 
+    def alerts(
+        self, company_id: uuid.UUID | str, start_date: date, end_date: date
+    ) -> list[dict[str, Any]]:
+        return cast(
+            list[dict[str, Any]],
+            self._analytics("/alerts", company_id, start_date, end_date),
+        )
+
     def revenue_forecast(
         self,
         company_id: uuid.UUID | str,
