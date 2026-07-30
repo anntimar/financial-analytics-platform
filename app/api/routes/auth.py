@@ -1,10 +1,19 @@
+import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.dependencies import get_auth_service
 from app.core.security import CurrentUser, require_roles
-from app.schemas.auth import LoginRequest, TokenResponse, UserCreate, UserResponse, UserRole
+from app.schemas.auth import (
+    LoginRequest,
+    TokenResponse,
+    UserCreate,
+    UserResponse,
+    UserRole,
+    UserUpdate,
+)
+from app.schemas.common import Page
 from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -30,3 +39,26 @@ def me(user: CurrentUser) -> UserResponse:
 @router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(data: UserCreate, service: Service, _admin: Admin) -> UserResponse:
     return UserResponse.model_validate(service.create_user(data))
+
+
+@router.get("/users", response_model=Page[UserResponse])
+def list_users(
+    service: Service,
+    _admin: Admin,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    company_id: uuid.UUID | None = None,
+    active_only: bool = False,
+) -> Page[UserResponse]:
+    return service.list_users(page, page_size, company_id, active_only)
+
+
+@router.patch("/users/{user_id}", response_model=UserResponse)
+def update_user(
+    user_id: uuid.UUID,
+    data: UserUpdate,
+    service: Service,
+    admin: CurrentUser,
+    _admin: Admin,
+) -> UserResponse:
+    return UserResponse.model_validate(service.update_user(user_id, data, admin.id))

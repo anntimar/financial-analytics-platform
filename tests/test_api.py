@@ -6,9 +6,10 @@ from unittest.mock import Mock
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.dependencies import get_company_service
+from app.api.dependencies import get_auth_service, get_company_service
 from app.core.exceptions import ConflictError
 from app.main import app
+from app.schemas.auth import UserResponse, UserRole
 from app.schemas.common import Page
 from app.schemas.company import CompanyResponse
 
@@ -108,3 +109,36 @@ def test_paid_transaction_requires_payment_date(client: TestClient) -> None:
 def test_pagination_rejects_page_size_over_limit(client: TestClient) -> None:
     response = client.get("/api/v1/companies?page_size=101")
     assert response.status_code == 422
+
+
+def test_admin_lists_and_updates_users(client: TestClient) -> None:
+    service = Mock()
+    user_id = uuid.uuid4()
+    user = UserResponse(
+        id=user_id,
+        company_id=None,
+        name="Administrador",
+        email="admin@example.com",
+        role=UserRole.ADMIN,
+        is_active=True,
+    )
+    service.list_users.return_value = Page[UserResponse](
+        items=[user],
+        total=1,
+        page=1,
+        page_size=20,
+    )
+    service.update_user.return_value = user
+    app.dependency_overrides[get_auth_service] = lambda: service
+
+    response = client.get("/api/v1/auth/users?active_only=true")
+    assert response.status_code == 200
+    assert response.json()["items"][0]["email"] == "admin@example.com"
+
+    response = client.patch(
+        f"/api/v1/auth/users/{user_id}",
+        json={"name": "Administrador", "role": "admin", "is_active": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["id"] == str(user_id)
+    service.update_user.assert_called_once()

@@ -18,6 +18,13 @@ class UserCreate(BaseModel):
     company_id: uuid.UUID | None = None
 
 
+class UserUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=2, max_length=120)
+    role: UserRole | None = None
+    company_id: uuid.UUID | None = None
+    is_active: bool | None = None
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str

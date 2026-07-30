@@ -15,6 +15,7 @@ from app.repositories.company_repository import CompanyRepository
 from app.repositories.import_repository import ImportRepository
 from app.repositories.transaction_repository import TransactionRepository
 from app.repositories.user_repository import UserRepository
+from app.schemas.auth import UserRole, UserUpdate
 from app.schemas.category import CategoryCreate, CategoryUpdate, TransactionType
 from app.schemas.company import CompanyCreate, CompanyUpdate
 from app.schemas.transaction import TransactionCreate, TransactionStatus, TransactionUpdate
@@ -183,12 +184,22 @@ def test_user_repository_queries_and_create() -> None:
         password_hash="hash",
         role="admin",
     )
-    session.scalar.side_effect = [2, user]
+    session.scalar.side_effect = [2, user, 1, 2]
     session.get.return_value = user
+    session.scalars.return_value = [user]
     repository = UserRepository(session)
 
     assert repository.count() == 2
     assert repository.get(user.id) is user
     assert repository.get_by_email("ADMIN@example.com") is user
     assert repository.create(user) is user
+    assert repository.list(1, 20, None, True) == ([user], 1)
+    assert repository.list(2, 10, uuid.uuid4(), False) == ([user], 2)
+    updated = repository.update(
+        user,
+        UserUpdate(name="Administrador", role=UserRole.ADMIN, is_active=False),
+    )
+    assert updated.name == "Administrador"
+    assert updated.role == "admin"
+    assert not updated.is_active
     session.add.assert_called_with(user)
